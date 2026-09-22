@@ -6,9 +6,10 @@ FROM node:20-slim
 WORKDIR /app
 
 # Install dependencies first for better layer caching. tsx (a devDependency) is
-# the runtime, so install all dependencies here (NODE_ENV is set afterwards).
+# the runtime, so ALL deps must be installed. --include=dev forces devDependencies
+# even when the build sets NODE_ENV=production (as Render does).
 COPY package.json package-lock.json ./
-RUN npm ci && npm cache clean --force
+RUN npm ci --include=dev && npm cache clean --force
 
 # Application source
 COPY tsconfig.json ./
