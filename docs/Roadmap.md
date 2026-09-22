@@ -60,18 +60,25 @@ Phase 8  Maintenance & Iteration
 
 ---
 
-## Phase 2 — Core Authentication (MVP)
+## Phase 2 — Core Authentication (MVP)  ✅ (implemented)
 **Goal:** A working, secure authentication core.
 
 - Scope (maps to FR-1..FR-17, SEC-1/2/7/12):
-  - [ ] Registration + input validation
-  - [ ] Secure password hashing (Argon2id/bcrypt)
-  - [ ] Login / logout
-  - [ ] Session or token issuance + verification + refresh
-  - [ ] Password change & reset (single-use, time-limited tokens)
-  - [ ] Email verification (if in v1 scope)
-- Exit criteria: A user can register, log in, refresh, and reset password securely; unit tests pass.
+  - [x] Registration + input validation (JSON-Schema at the API boundary + password policy)
+  - [x] Secure password hashing (Argon2id via `@node-rs/argon2`)
+  - [x] Login / logout
+  - [x] Token issuance + stateless verification + rotating refresh (with reuse detection)
+  - [x] Password change & reset (single-use, time-limited tokens; sessions invalidated)
+  - [x] Email verification
+- Also delivered: config validation, storage abstraction (in-memory + PostgreSQL +
+  migration), rate limiting, audit hooks, health/ready endpoints, **38 passing tests**,
+  clean typecheck, and **0 production-dependency vulnerabilities** (Fastify 5).
+- Exit criteria: A user can register, log in, refresh, and reset password securely;
+  tests pass. ✅ **Met.**
 - Est. effort: **1–2 weeks**
+
+> Note: RBAC *enforcement* (guards, admin endpoints, role management) is Phase 3. Phase 2
+> already resolves and embeds roles/permissions in tokens, and ships the full RBAC schema.
 
 ---
 

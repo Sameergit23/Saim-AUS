@@ -3,8 +3,9 @@
 A **free, open-source, secure** authentication system with **Role-Based Access Control (RBAC)**
 that any developer can drop into their project.
 
-> Status: **Phase 1 — Design & Architecture (drafted, pending review)**
-> This repository currently contains SDLC planning & design documents only. No code yet.
+> Status: **Phase 2 — Auth MVP implemented** ✅
+> Working TypeScript service: register, verify, login, refresh (rotating), logout,
+> password change/reset, and `/me`. 38 tests passing. RBAC enforcement lands in Phase 3.
 
 ## Vision
 
@@ -19,6 +20,54 @@ Saim-AUS aims to be a reusable, well-tested, security-first building block that 
 - Audit logging
 
 Free to use under the [MIT License](LICENSE) — use it in any project, including commercial.
+
+## Getting started (development)
+
+Requires **Node.js 20+**.
+
+```bash
+npm install
+cp .env.example .env          # then set a strong JWT_SECRET (>= 32 chars)
+npm run dev                   # starts the service (default: http://localhost:3000)
+```
+
+By default the service runs with the in-memory store (`STORAGE=memory`) — no database
+needed for local development. For PostgreSQL, set `STORAGE=postgres` and `DATABASE_URL`,
+then apply the schema:
+
+```bash
+npm run migrate
+```
+
+### Common scripts
+
+| Command | What it does |
+|---------|--------------|
+| `npm run dev` | Start with hot reload |
+| `npm start` | Start once |
+| `npm test` | Run the test suite (38 tests) |
+| `npm run typecheck` | Type-check with `tsc` |
+| `npm run lint` / `npm run format` | Lint / format |
+| `npm run migrate` | Apply the PostgreSQL schema |
+
+### Try it (curl)
+
+```bash
+# 1. Register (a verification link is logged to the console in dev)
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"Str0ng!Passphrase"}'
+
+# 2. Verify with the token from the console, then log in
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"Str0ng!Passphrase"}'
+
+# 3. Call a protected route with the returned access token
+curl http://localhost:3000/api/v1/me -H 'Authorization: Bearer <accessToken>'
+```
+
+See the full endpoint reference in [docs/design/03-API-Contract.md](docs/design/03-API-Contract.md).
 
 ## Documents
 
