@@ -105,19 +105,25 @@ Phase 8  Maintenance & Iteration
 
 ---
 
-## Phase 4 — Security Hardening
+## Phase 4 — Security Hardening  ✅ (implemented)
 **Goal:** Close the gap between "works" and "safe to trust."
 
 - Scope (maps to §5 Security Requirements):
-  - [ ] Rate limiting, lockout, progressive delays (SEC-3)
-  - [ ] Token revocation + refresh rotation (SEC-4)
-  - [ ] CSRF protection for cookie flows (SEC-6)
-  - [ ] Secrets management & key rotation strategy (SEC-8)
-  - [ ] Audit logging of security events (SEC-10)
-  - [ ] Dependency/CVE scanning in CI (SEC-11)
-  - [ ] (Optional) MFA/TOTP
-- Exit criteria: Threat-model mitigations implemented; security checklist passes.
+  - [x] Rate limiting + **account lockout** (per-identifier, auto-unlocking) (SEC-3)
+  - [x] Token revocation + refresh rotation with reuse detection (SEC-4, from Phase 2)
+  - [x] **CSRF protection** for cookie flows (Origin check + `SameSite=Strict`) (SEC-6)
+  - [x] Secrets management & **signing-key rotation** (verify current + previous) (SEC-8)
+  - [x] Audit logging of security events (SEC-10)
+  - [x] Dependency/CVE scanning in **CI** (SEC-11)
+  - [x] **Security headers** via `@fastify/helmet` (HSTS, nosniff, frame-options)
+  - [ ] (Optional) MFA/TOTP — deferred
+- Also delivered: `SECURITY.md` disclosure policy; GitHub Actions CI (typecheck, lint,
+  test, `npm audit`); **68 tests passing**; **0 production-dependency vulnerabilities**.
+- Exit criteria: Threat-model mitigations implemented; security checklist passes. ✅ **Met.**
 - Est. effort: **1–2 weeks**
+
+> Deferred: MFA/TOTP (optional, FR-11) and instant permission invalidation via `permVer`
+> (access tokens remain valid ≤ TTL by design). Both are candidates for a later iteration.
 
 ---
 

@@ -8,6 +8,7 @@ import type {
 import type {
   AuditRepo,
   EmailTokenRepo,
+  LoginAttemptRepo,
   NewEmailToken,
   NewRefreshToken,
   NewUser,
@@ -350,12 +351,36 @@ export function createPostgresStorage(databaseUrl: string): Storage {
     },
   };
 
+  const loginAttempts: LoginAttemptRepo = {
+    async record(identifier, successful, ipHash) {
+      await pool.query(
+        `INSERT INTO login_attempts (identifier, successful, ip_hash) VALUES ($1, $2, $3)`,
+        [identifier.toLowerCase(), successful, ipHash],
+      );
+    },
+    async countRecentFailures(identifier, since) {
+      const { rows } = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM login_attempts
+         WHERE identifier = $1 AND successful = FALSE AND attempted_at >= $2`,
+        [identifier.toLowerCase(), since],
+      );
+      return rows[0].n as number;
+    },
+    async clearFailures(identifier) {
+      await pool.query(
+        'DELETE FROM login_attempts WHERE identifier = $1 AND successful = FALSE',
+        [identifier.toLowerCase()],
+      );
+    },
+  };
+
   return {
     users,
     refreshTokens,
     emailTokens,
     roles,
     audit,
+    loginAttempts,
     async close() {
       await pool.end();
     },

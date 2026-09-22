@@ -15,6 +15,7 @@ import {
 export interface RouteDeps {
   auth: AuthService;
   authenticate: preHandlerHookHandler;
+  csrf: preHandlerHookHandler;
   config: Config;
 }
 
@@ -57,7 +58,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: RouteDeps): void 
 
   // No body schema: web clients call this with only the HttpOnly cookie (no body),
   // while native clients may send { refreshToken } in the body. Both are handled.
-  app.post('/refresh', { ...sensitive }, async (request, reply) => {
+  app.post('/refresh', { preHandler: deps.csrf, ...sensitive }, async (request, reply) => {
     const body = (request.body ?? {}) as { refreshToken?: string };
     const token = readRefreshToken(request, body.refreshToken);
     if (!token) throw Errors.invalidToken();
@@ -70,7 +71,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: RouteDeps): void 
     });
   });
 
-  app.post('/logout', async (request, reply) => {
+  app.post('/logout', { preHandler: deps.csrf }, async (request, reply) => {
     const token = readRefreshToken(request);
     if (token) await auth.logout(token);
     clearRefreshCookie(reply, config);

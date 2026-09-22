@@ -9,6 +9,7 @@ import type {
 import type {
   AuditRepo,
   EmailTokenRepo,
+  LoginAttemptRepo,
   NewEmailToken,
   NewRefreshToken,
   NewUser,
@@ -299,12 +300,30 @@ export function createMemoryStorage(): Storage {
     },
   };
 
+  const attempts: Array<{ identifier: string; successful: boolean; at: Date }> = [];
+  const loginAttempts: LoginAttemptRepo = {
+    async record(identifier, successful) {
+      attempts.push({ identifier: identifier.toLowerCase(), successful, at: new Date() });
+    },
+    async countRecentFailures(identifier, since) {
+      const id = identifier.toLowerCase();
+      return attempts.filter((a) => a.identifier === id && !a.successful && a.at >= since).length;
+    },
+    async clearFailures(identifier) {
+      const id = identifier.toLowerCase();
+      for (let i = attempts.length - 1; i >= 0; i--) {
+        if (attempts[i]!.identifier === id && !attempts[i]!.successful) attempts.splice(i, 1);
+      }
+    },
+  };
+
   return {
     users,
     refreshTokens: refreshTokenRepo,
     emailTokens: emailTokenRepo,
     roles,
     audit,
+    loginAttempts,
     async close() {
       /* nothing to close */
     },

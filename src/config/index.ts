@@ -11,6 +11,7 @@ export interface Config {
   storage: 'memory' | 'postgres';
   databaseUrl: string | null;
   jwtSecret: string;
+  jwtPreviousSecret: string | null;
   jwtKid: string;
   accessTokenTtl: string;
   refreshTokenTtlDays: number;
@@ -18,6 +19,10 @@ export interface Config {
   cookieSecure: boolean;
   cookieDomain: string | undefined;
   publicBaseUrl: string;
+  // Security hardening (Phase 4)
+  loginMaxAttempts: number;
+  loginWindowMinutes: number;
+  allowedOrigins: string[];
 }
 
 function required(name: string): string {
@@ -52,7 +57,18 @@ export function loadConfig(): Config {
     throw new Error('JWT_SECRET must be at least 32 characters for adequate signing strength.');
   }
 
+  // Optional previous signing secret, accepted during key rotation for verification only.
+  const jwtPreviousSecret = process.env.JWT_PREVIOUS_SECRET?.trim() || null;
+  if (jwtPreviousSecret && jwtPreviousSecret.length < 32) {
+    throw new Error('JWT_PREVIOUS_SECRET must be at least 32 characters.');
+  }
+
   const databaseUrl = storage === 'postgres' ? required('DATABASE_URL') : process.env.DATABASE_URL ?? null;
+
+  const allowedOrigins = optional('ALLOWED_ORIGINS', '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
 
   return {
     env,
@@ -61,6 +77,7 @@ export function loadConfig(): Config {
     storage,
     databaseUrl,
     jwtSecret,
+    jwtPreviousSecret,
     jwtKid: optional('JWT_KID', 'default'),
     accessTokenTtl: optional('ACCESS_TOKEN_TTL', '15m'),
     refreshTokenTtlDays: toInt(optional('REFRESH_TOKEN_TTL_DAYS', '30'), 'REFRESH_TOKEN_TTL_DAYS'),
@@ -68,5 +85,8 @@ export function loadConfig(): Config {
     cookieSecure: optional('COOKIE_SECURE', 'false') === 'true',
     cookieDomain: process.env.COOKIE_DOMAIN?.trim() || undefined,
     publicBaseUrl: optional('PUBLIC_BASE_URL', 'http://localhost:3000'),
+    loginMaxAttempts: toInt(optional('LOGIN_MAX_ATTEMPTS', '5'), 'LOGIN_MAX_ATTEMPTS'),
+    loginWindowMinutes: toInt(optional('LOGIN_LOCKOUT_MINUTES', '15'), 'LOGIN_LOCKOUT_MINUTES'),
+    allowedOrigins,
   };
 }

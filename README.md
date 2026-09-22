@@ -3,10 +3,10 @@
 A **free, open-source, secure** authentication system with **Role-Based Access Control (RBAC)**
 that any developer can drop into their project.
 
-> Status: **Phase 3 — RBAC enforcement implemented** ✅
-> Full auth (register, verify, login, rotating refresh, logout, password change/reset, `/me`)
-> **plus** deny-by-default permission guards and an admin API for managing users, roles,
-> permissions, and role assignments. **60 tests passing.**
+> Status: **Phase 4 — Security hardening implemented** ✅
+> Full auth + RBAC, now hardened with account lockout, CSRF protection, security headers,
+> JWT signing-key rotation, a CI pipeline (with CVE scanning), and a disclosure policy.
+> **68 tests passing · 0 production-dependency vulnerabilities.**
 
 ## Vision
 

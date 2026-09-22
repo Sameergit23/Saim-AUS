@@ -16,6 +16,7 @@ async function main(): Promise<void> {
   const password = createPasswordService();
   const tokens = createTokenService({
     secret: config.jwtSecret,
+    previousSecrets: config.jwtPreviousSecret ? [config.jwtPreviousSecret] : [],
     kid: config.jwtKid,
     accessTokenTtl: config.accessTokenTtl,
   });
@@ -31,6 +32,8 @@ async function main(): Promise<void> {
     refreshTokenTtlDays: config.refreshTokenTtlDays,
     emailTokenTtlMinutes: config.emailTokenTtlMinutes,
     publicBaseUrl: config.publicBaseUrl,
+    loginMaxAttempts: config.loginMaxAttempts,
+    loginWindowMinutes: config.loginWindowMinutes,
   });
 
   const rbac = createRbacService({ storage, clock: systemClock });

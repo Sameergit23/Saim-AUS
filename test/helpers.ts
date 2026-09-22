@@ -54,6 +54,8 @@ export function buildTestHarness(): TestHarness {
     refreshTokenTtlDays: 30,
     emailTokenTtlMinutes: 60,
     publicBaseUrl: 'http://localhost:3000',
+    loginMaxAttempts: 5,
+    loginWindowMinutes: 15,
   });
 
   const rbac = createRbacService({ storage, clock: systemClock });
@@ -65,6 +67,7 @@ export function buildTestHarness(): TestHarness {
     storage: 'memory',
     databaseUrl: null,
     jwtSecret: TEST_SECRET,
+    jwtPreviousSecret: null,
     jwtKid: 'test',
     accessTokenTtl: '15m',
     refreshTokenTtlDays: 30,
@@ -72,6 +75,9 @@ export function buildTestHarness(): TestHarness {
     cookieSecure: false,
     cookieDomain: undefined,
     publicBaseUrl: 'http://localhost:3000',
+    loginMaxAttempts: 5,
+    loginWindowMinutes: 15,
+    allowedOrigins: [],
   };
 
   return { storage, tokens, auth, rbac, sent, config };

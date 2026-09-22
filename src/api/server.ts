@@ -1,4 +1,5 @@
 import cookie from '@fastify/cookie';
+import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Config } from '../config/index.js';
@@ -6,6 +7,7 @@ import type { AuthService } from '../core/authn/authService.js';
 import type { RbacService } from '../core/authz/rbacService.js';
 import type { TokenService } from '../core/tokens/tokenService.js';
 import { createAuthenticate } from './authGuard.js';
+import { createCsrfGuard } from './csrfGuard.js';
 import { errorHandler } from './errorHandler.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerAuthRoutes, type RouteDeps } from './routes/auth.js';
@@ -31,6 +33,9 @@ export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
 
   app.setErrorHandler(errorHandler);
 
+  // Security response headers (nosniff, frame-options, HSTS, etc.). CSP is
+  // disabled since this service returns JSON, not HTML (SEC / threat model).
+  await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cookie);
   await app.register(rateLimit, {
     global: true,
@@ -39,7 +44,8 @@ export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
   });
 
   const authenticate = createAuthenticate(tokens);
-  const routeDeps: RouteDeps = { auth, config, authenticate };
+  const csrf = createCsrfGuard(config.allowedOrigins);
+  const routeDeps: RouteDeps = { auth, config, authenticate, csrf };
 
   registerHealthRoutes(app);
   await app.register(

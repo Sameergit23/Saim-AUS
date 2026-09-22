@@ -147,4 +147,44 @@ describe('authService', () => {
       expect(h.sent).toHaveLength(0);
     });
   });
+
+  describe('account lockout', () => {
+    it('locks the account after too many failed attempts', async () => {
+      const { email } = await registerAndVerify(h);
+      // Harness allows 5 attempts; make 5 failures.
+      for (let i = 0; i < 5; i++) {
+        await expect(h.auth.login(email, 'WrongPassword!1', {})).rejects.toMatchObject({
+          code: 'INVALID_CREDENTIALS',
+        });
+      }
+      // Even the CORRECT password is now blocked with a lockout error.
+      await expect(h.auth.login(email, 'Str0ng!Passphrase', {})).rejects.toMatchObject({
+        code: 'TOO_MANY_ATTEMPTS',
+      });
+    });
+
+    it('locks unknown identifiers too (no enumeration via lockout)', async () => {
+      for (let i = 0; i < 5; i++) {
+        await expect(h.auth.login('ghost@example.com', 'Whatever!123', {})).rejects.toMatchObject({
+          code: 'INVALID_CREDENTIALS',
+        });
+      }
+      await expect(h.auth.login('ghost@example.com', 'Whatever!123', {})).rejects.toMatchObject({
+        code: 'TOO_MANY_ATTEMPTS',
+      });
+    });
+
+    it('a successful login resets the failure counter', async () => {
+      const { email, password } = await registerAndVerify(h);
+      for (let i = 0; i < 4; i++) {
+        await expect(h.auth.login(email, 'WrongPassword!1', {})).rejects.toBeTruthy();
+      }
+      // Success clears failures...
+      await expect(h.auth.login(email, password, {})).resolves.toBeTruthy();
+      // ...so we can fail again without being immediately locked.
+      await expect(h.auth.login(email, 'WrongPassword!1', {})).rejects.toMatchObject({
+        code: 'INVALID_CREDENTIALS',
+      });
+    });
+  });
 });

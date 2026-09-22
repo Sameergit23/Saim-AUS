@@ -90,21 +90,21 @@ flowchart LR
 
 ## 3. Cross-cutting mitigations checklist
 
-- [ ] TLS 1.2+ enforced; HSTS at proxy (SEC-2)
-- [ ] Cookies: `HttpOnly; Secure; SameSite=Strict` (SEC-2, SEC-6)
-- [ ] CSRF protection for cookie-based flows (SEC-6)
-- [ ] Argon2id with tuned cost; unique salts (SEC-1)
-- [ ] Rate limiting + lockout on auth endpoints (SEC-3)
-- [ ] JWT: pinned algorithm, verified `iss`/`exp`, reject `alg:none` (SEC-4)
-- [ ] Refresh rotation + reuse detection (SEC-4)
-- [ ] Parameterized queries everywhere; schema validation (SEC-5)
-- [ ] Generic auth errors; uniform response timing (SEC-7)
-- [ ] Secrets/keys from env or secret store; rotation supported (SEC-8)
-- [ ] Deny-by-default authorization on every protected op (SEC-9)
-- [ ] Append-only audit log (SEC-10)
-- [ ] Dependency/CVE scanning in CI; SBOM (SEC-11)
-- [ ] Single-use, time-limited, random verification/reset tokens (SEC-12)
-- [ ] Security headers (CSP where applicable, X-Content-Type-Options, etc.)
+- [x] HSTS header emitted (helmet); TLS termination is the deployer's responsibility (SEC-2)
+- [x] Cookies: `HttpOnly; Secure; SameSite=Strict` (SEC-2, SEC-6)
+- [x] CSRF protection for cookie-based flows — Origin check + SameSite (SEC-6)
+- [x] Argon2id with tuned cost; unique salts (SEC-1)
+- [x] Rate limiting + account lockout on auth endpoints (SEC-3)
+- [x] JWT: pinned algorithm, verified `iss`/`exp`, reject `alg:none` (SEC-4)
+- [x] Refresh rotation + reuse detection (SEC-4)
+- [x] Parameterized queries everywhere; schema validation (SEC-5)
+- [x] Generic auth errors; uniform response timing via dummy-hash verify (SEC-7)
+- [x] Secrets/keys from env; signing-key rotation supported (SEC-8)
+- [x] Deny-by-default authorization on every protected op (SEC-9)
+- [x] Append-only audit log (SEC-10)
+- [x] Dependency/CVE scanning in CI (SEC-11) — *SBOM generation still TODO (Phase 7)*
+- [x] Single-use, time-limited, random verification/reset tokens (SEC-12)
+- [x] Security headers via helmet (nosniff, frame-options, HSTS, etc.)
 
 ---
 

@@ -28,4 +28,11 @@ export const Errors = {
     new AppError('EMAIL_NOT_VERIFIED', 'Please verify your email address before logging in.', 403),
   notFound: (message = 'Resource not found.') => new AppError('NOT_FOUND', message, 404),
   conflict: (message = 'Resource already exists.') => new AppError('CONFLICT', message, 409),
+  tooManyAttempts: () =>
+    new AppError(
+      'TOO_MANY_ATTEMPTS',
+      'Too many failed attempts. Please wait and try again later.',
+      429,
+    ),
+  csrf: () => new AppError('CSRF_REJECTED', 'Cross-origin request rejected.', 403),
 } as const;

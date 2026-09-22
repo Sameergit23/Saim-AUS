@@ -94,11 +94,18 @@ export interface AuditRepo {
   record(event: AuditEvent): Promise<void>;
 }
 
+export interface LoginAttemptRepo {
+  record(identifier: string, successful: boolean, ipHash: string | null): Promise<void>;
+  countRecentFailures(identifier: string, since: Date): Promise<number>;
+  clearFailures(identifier: string): Promise<void>;
+}
+
 export interface Storage {
   users: UserRepo;
   refreshTokens: RefreshTokenRepo;
   emailTokens: EmailTokenRepo;
   roles: RoleRepo;
   audit: AuditRepo;
+  loginAttempts: LoginAttemptRepo;
   close(): Promise<void>;
 }

@@ -20,6 +20,8 @@ export interface AccessTokenInput {
 
 export interface TokenServiceOptions {
   secret: string;
+  /** Older secrets still accepted for verification during a key rotation (SEC-8). */
+  previousSecrets?: string[];
   kid: string;
   accessTokenTtl: string; // e.g. "15m"
 }
@@ -30,7 +32,11 @@ export interface TokenService {
 }
 
 export function createTokenService(opts: TokenServiceOptions): TokenService {
-  const key = new TextEncoder().encode(opts.secret);
+  const encoder = new TextEncoder();
+  const signingKey = encoder.encode(opts.secret);
+  // Accept the current key plus any previous keys, so tokens issued just before
+  // a key rotation stay valid until they expire (no forced mass logout).
+  const verifyKeys = [signingKey, ...(opts.previousSecrets ?? []).map((s) => encoder.encode(s))];
 
   return {
     async signAccessToken(input: AccessTokenInput): Promise<string> {
@@ -40,25 +46,25 @@ export function createTokenService(opts: TokenServiceOptions): TokenService {
         .setSubject(input.userId)
         .setIssuedAt()
         .setExpirationTime(opts.accessTokenTtl)
-        .sign(key);
+        .sign(signingKey);
     },
 
     async verifyAccessToken(token: string): Promise<AccessClaims> {
-      try {
-        // Pin the algorithm and issuer to defeat alg-confusion / "alg:none" (SEC-4).
-        const { payload } = await jwtVerify(token, key, {
-          issuer: ISSUER,
-          algorithms: [ALG],
-        });
-        return {
-          sub: String(payload.sub),
-          roles: Array.isArray(payload.roles) ? (payload.roles as string[]) : [],
-          perms: Array.isArray(payload.perms) ? (payload.perms as string[]) : [],
-          permVer: typeof payload.permVer === 'number' ? payload.permVer : 0,
-        };
-      } catch {
-        throw Errors.invalidToken();
+      for (const key of verifyKeys) {
+        try {
+          // Pin the algorithm and issuer to defeat alg-confusion / "alg:none" (SEC-4).
+          const { payload } = await jwtVerify(token, key, { issuer: ISSUER, algorithms: [ALG] });
+          return {
+            sub: String(payload.sub),
+            roles: Array.isArray(payload.roles) ? (payload.roles as string[]) : [],
+            perms: Array.isArray(payload.perms) ? (payload.perms as string[]) : [],
+            permVer: typeof payload.permVer === 'number' ? payload.permVer : 0,
+          };
+        } catch {
+          // Try the next key (rotation) before giving up.
+        }
       }
+      throw Errors.invalidToken();
     },
   };
 }

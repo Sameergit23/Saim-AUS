@@ -43,4 +43,34 @@ describe('tokenService', () => {
   it('rejects garbage input', async () => {
     await expect(svc.verifyAccessToken('not.a.jwt')).rejects.toBeInstanceOf(AppError);
   });
+
+  describe('key rotation', () => {
+    const oldSecret = 'old-secret-that-is-at-least-32-characters-long!';
+    const newSecret = 'new-secret-that-is-at-least-32-characters-long!';
+
+    it('verifies a token signed with a previous secret after rotation', async () => {
+      const oldService = createTokenService({ secret: oldSecret, kid: 'k1', accessTokenTtl: '15m' });
+      const rotated = createTokenService({
+        secret: newSecret,
+        previousSecrets: [oldSecret],
+        kid: 'k2',
+        accessTokenTtl: '15m',
+      });
+
+      const oldToken = await oldService.signAccessToken({ userId: 'u', roles: [], perms: [], permVer: 1 });
+      // Token signed with the old key still verifies during rotation.
+      await expect(rotated.verifyAccessToken(oldToken)).resolves.toMatchObject({ sub: 'u' });
+
+      // New tokens are signed with the new key and verify too.
+      const newToken = await rotated.signAccessToken({ userId: 'u', roles: [], perms: [], permVer: 1 });
+      await expect(rotated.verifyAccessToken(newToken)).resolves.toMatchObject({ sub: 'u' });
+    });
+
+    it('rejects a token once its signing key is dropped from rotation', async () => {
+      const onlyNew = createTokenService({ secret: newSecret, kid: 'k2', accessTokenTtl: '15m' });
+      const oldService = createTokenService({ secret: oldSecret, kid: 'k1', accessTokenTtl: '15m' });
+      const oldToken = await oldService.signAccessToken({ userId: 'u', roles: [], perms: [], permVer: 1 });
+      await expect(onlyNew.verifyAccessToken(oldToken)).rejects.toBeInstanceOf(AppError);
+    });
+  });
 });

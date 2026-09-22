@@ -21,6 +21,8 @@ export interface AuthServiceDeps {
   refreshTokenTtlDays: number;
   emailTokenTtlMinutes: number;
   publicBaseUrl: string;
+  loginMaxAttempts: number;
+  loginWindowMinutes: number;
 }
 
 export interface RequestContext {
@@ -124,6 +126,21 @@ export function createAuthService(deps: AuthServiceDeps): AuthService {
 
     async login(emailRaw, passwordRaw, ctx) {
       const email = normalizeEmail(emailRaw);
+
+      // Account lockout: too many recent failures for this identifier blocks
+      // further attempts, regardless of whether the account exists (SEC-3,
+      // no enumeration). Auto-unlocks as failures age out of the window.
+      const since = new Date(clock.now().getTime() - deps.loginWindowMinutes * 60_000);
+      const failures = await storage.loginAttempts.countRecentFailures(email, since);
+      if (failures >= deps.loginMaxAttempts) {
+        await storage.audit.record({
+          actorId: null,
+          event: 'auth.login_locked',
+          ipHash: hashIp(ctx.ip),
+        });
+        throw Errors.tooManyAttempts();
+      }
+
       const user = await storage.users.findByEmail(email);
 
       // Always run a hash verification to keep timing uniform (mitigate enumeration).
@@ -131,6 +148,7 @@ export function createAuthService(deps: AuthServiceDeps): AuthService {
       const ok = await password.verify(hashToCheck, passwordRaw);
 
       if (!user || !ok) {
+        await storage.loginAttempts.record(email, false, hashIp(ctx.ip));
         await storage.audit.record({
           actorId: user?.id ?? null,
           event: 'auth.login_failed',
@@ -141,6 +159,8 @@ export function createAuthService(deps: AuthServiceDeps): AuthService {
       if (user.status === 'disabled') throw Errors.accountDisabled();
       if (!user.emailVerified || user.status === 'pending') throw Errors.emailNotVerified();
 
+      // Successful credential check clears the failure counter for this identifier.
+      await storage.loginAttempts.clearFailures(email);
       await storage.users.update(user.id, { lastLoginAt: clock.now() });
       const session = await issueSession(user.id, ctx, randomUUID());
       const [roles, perms] = await Promise.all([
