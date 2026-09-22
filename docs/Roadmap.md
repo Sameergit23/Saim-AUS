@@ -1,0 +1,194 @@
+# SDLC Roadmap
+## Saim-AUS — Authentication & Authorization System
+
+**Version:** 0.1 (Draft)
+**Date:** 2026-09-22
+**Methodology:** Iterative / incremental SDLC (waterfall-style planning up front,
+then agile iterations for build & test).
+
+---
+
+## Overview
+
+This roadmap breaks the project into SDLC phases with clear entry criteria, deliverables,
+and exit criteria ("Definition of Done"). Timeboxes are indicative for a small team/solo
+developer and can be compressed or expanded.
+
+```
+Phase 0  Planning & Requirements     ← YOU ARE HERE
+Phase 1  Design & Architecture
+Phase 2  Core Authentication (MVP)
+Phase 3  Authorization / RBAC
+Phase 4  Security Hardening
+Phase 5  Testing & QA
+Phase 6  Documentation & Developer Experience
+Phase 7  Packaging, CI/CD & Release
+Phase 8  Maintenance & Iteration
+```
+
+---
+
+## Phase 0 — Planning & Requirements  ✅ (in progress)
+**Goal:** Agree on *what* we're building and *why*, before any code.
+
+- Deliverables:
+  - [x] Project vision / README
+  - [x] Software Requirements Specification ([SRS-Requirements.md](SRS-Requirements.md))
+  - [x] This roadmap
+  - [ ] Success metrics agreed (adoption, security posture, DX time-to-integrate)
+- Exit criteria: Requirements reviewed and accepted; scope for v1 frozen.
+- Est. effort: **1–2 days**
+
+---
+
+## Phase 1 — Design & Architecture  🟡 (drafted — pending review)
+**Goal:** Decide *how*. Turn requirements into a concrete technical plan.
+
+- Key decisions made here (deferred from Phase 0) — see [ADRs](design/00-Decisions-ADR.md):
+  - [x] Technology stack → **Node.js + TypeScript** (ADR-001)
+  - [x] Deliverable form → **standalone service + modular core** (ADR-002)
+  - [x] Auth mechanism → **JWT access + rotating refresh** (ADR-003)
+  - [x] Database engine → **PostgreSQL** (ADR-004)
+- Deliverables:
+  - [x] [Architecture document](design/01-Architecture.md) (components, data flow, deployment)
+  - [x] [Database schema](design/02-Database-Schema.md) (users, roles, permissions, sessions, audit)
+  - [x] [API contract](design/03-API-Contract.md) (endpoints, request/response, error model)
+  - [x] [**Threat model** (STRIDE)](design/04-Threat-Model.md) + security design decisions
+  - [x] [Engineering standards](design/05-Engineering-Standards.md) (coding, branching, license)
+- Exit criteria: Architecture + API contract + threat model reviewed and approved. ⟵ **awaiting your review**
+- Est. effort: **3–5 days**
+
+---
+
+## Phase 2 — Core Authentication (MVP)
+**Goal:** A working, secure authentication core.
+
+- Scope (maps to FR-1..FR-17, SEC-1/2/7/12):
+  - [ ] Registration + input validation
+  - [ ] Secure password hashing (Argon2id/bcrypt)
+  - [ ] Login / logout
+  - [ ] Session or token issuance + verification + refresh
+  - [ ] Password change & reset (single-use, time-limited tokens)
+  - [ ] Email verification (if in v1 scope)
+- Exit criteria: A user can register, log in, refresh, and reset password securely; unit tests pass.
+- Est. effort: **1–2 weeks**
+
+---
+
+## Phase 3 — Authorization / RBAC
+**Goal:** Roles and permissions enforced across protected operations.
+
+- Scope (maps to FR-18..FR-29):
+  - [ ] Roles, Permissions, and mappings implemented
+  - [ ] Effective-permission resolution (union across roles)
+  - [ ] Deny-by-default enforcement / guard mechanism
+  - [ ] Default roles (`user`, `admin`) + custom roles
+  - [ ] Admin operations (manage users/roles/permissions)
+  - [ ] (Optional) role hierarchy / inheritance
+- Exit criteria: Protected actions require the correct permission; admin can manage RBAC; tests pass.
+- Est. effort: **1–2 weeks**
+
+---
+
+## Phase 4 — Security Hardening
+**Goal:** Close the gap between "works" and "safe to trust."
+
+- Scope (maps to §5 Security Requirements):
+  - [ ] Rate limiting, lockout, progressive delays (SEC-3)
+  - [ ] Token revocation + refresh rotation (SEC-4)
+  - [ ] CSRF protection for cookie flows (SEC-6)
+  - [ ] Secrets management & key rotation strategy (SEC-8)
+  - [ ] Audit logging of security events (SEC-10)
+  - [ ] Dependency/CVE scanning in CI (SEC-11)
+  - [ ] (Optional) MFA/TOTP
+- Exit criteria: Threat-model mitigations implemented; security checklist passes.
+- Est. effort: **1–2 weeks**
+
+---
+
+## Phase 5 — Testing & QA
+**Goal:** Prove it works and stays working.
+
+- Scope:
+  - [ ] Unit tests (core auth + RBAC logic) — target ≥ 80% coverage
+  - [ ] Integration tests (end-to-end flows)
+  - [ ] Security testing (authz bypass, brute force, token abuse, injection)
+  - [ ] Negative & edge cases (malformed input, expired tokens, enumeration)
+  - [ ] Load/performance sanity against NFR targets
+- Exit criteria: All test suites green; coverage target met; known-issue list triaged.
+- Est. effort: **1–2 weeks** (runs partly in parallel with Phases 2–4)
+
+---
+
+## Phase 6 — Documentation & Developer Experience
+**Goal:** Someone else can adopt it in under 30 minutes (NFR-9).
+
+- Scope:
+  - [ ] Quick-start / getting-started guide
+  - [ ] API reference
+  - [ ] Integration example(s)
+  - [ ] Configuration & deployment guide
+  - [ ] Security & operations notes (how to run it safely)
+  - [ ] CONTRIBUTING + Code of Conduct + SECURITY.md (responsible disclosure)
+- Exit criteria: A fresh developer integrates the system using only the docs.
+- Est. effort: **3–5 days**
+
+---
+
+## Phase 7 — Packaging, CI/CD & Release
+**Goal:** Make it free and easy to obtain and run.
+
+- Scope:
+  - [ ] License file (MIT/Apache-2.0)
+  - [ ] Reproducible build + container image
+  - [ ] CI pipeline (lint, test, security scan) + CD for releases
+  - [ ] Versioning (SemVer) + changelog
+  - [ ] Public repository + v1.0.0 release
+- Exit criteria: A tagged, documented, installable v1.0.0 is publicly available.
+- Est. effort: **3–5 days**
+
+---
+
+## Phase 8 — Maintenance & Iteration
+**Goal:** Keep it secure and useful over time.
+
+- Ongoing:
+  - Security patching & dependency updates
+  - Bug triage & issue response
+  - Feature iterations from the backlog (MFA, social login, resource-scoped perms)
+  - Periodic threat-model review
+
+---
+
+## Milestone summary
+
+| Milestone | Phase | Definition |
+|-----------|-------|------------|
+| **M0** Requirements frozen | 0 | SRS accepted |
+| **M1** Design approved | 1 | Architecture + API + threat model signed off |
+| **M2** Auth MVP | 2 | Register/login/reset working & tested |
+| **M3** RBAC complete | 3 | Roles/permissions enforced |
+| **M4** Hardened | 4 | Security mitigations in place |
+| **M5** QA passed | 5 | Coverage + security tests green |
+| **M6** Docs ready | 6 | 30-min integration achievable |
+| **M7** v1.0.0 released | 7 | Public, free, installable |
+
+---
+
+## Risks & mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|-----------|
+| Rolling own crypto / auth incorrectly | High (breaches) | Use vetted libraries; follow OWASP; threat model; peer review |
+| Scope creep (MFA, social, SAML in v1) | Medium (delay) | Keep v1 lean; push extras to backlog/Phase 8 |
+| Insecure defaults adopted by users | High | Ship secure-by-default config; document safe deployment |
+| Low test coverage on security paths | High | Enforce coverage gate; dedicated security test suite |
+| Dependency vulnerabilities | Medium | Automated CVE scanning in CI (SEC-11) |
+
+---
+
+## Immediate next steps
+
+1. Review & accept the [SRS](SRS-Requirements.md) (freeze v1 scope) → **M0**.
+2. Kick off **Phase 1**: make the four deferred decisions (stack, deliverable, auth mechanism, database).
+3. Produce the architecture doc, DB schema, API contract, and threat model.
