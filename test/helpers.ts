@@ -3,7 +3,7 @@ import { createAuthService, type AuthService } from '../src/core/authn/authServi
 import { createRbacService, type RbacService } from '../src/core/authz/rbacService.js';
 import { createPasswordService } from '../src/core/password/passwordService.js';
 import { createTokenService, type TokenService } from '../src/core/tokens/tokenService.js';
-import { systemClock } from '../src/infra/clock.js';
+import { systemClock, type Clock } from '../src/infra/clock.js';
 import type { Mailer } from '../src/infra/mailer.js';
 import { createMemoryStorage } from '../src/storage/memory/memoryStorage.js';
 import type { Storage } from '../src/storage/interfaces.js';
@@ -23,9 +23,11 @@ export interface TestHarness {
   rbac: RbacService;
   sent: SentEmail[];
   config: Config;
+  clock: Clock;
 }
 
-export function buildTestHarness(): TestHarness {
+export function buildTestHarness(opts: { clock?: Clock } = {}): TestHarness {
+  const clock = opts.clock ?? systemClock;
   const storage = createMemoryStorage();
   const password = createPasswordService();
   const tokens = createTokenService({
@@ -49,7 +51,7 @@ export function buildTestHarness(): TestHarness {
     password,
     tokens,
     mailer,
-    clock: systemClock,
+    clock,
     accessTokenTtl: '15m',
     refreshTokenTtlDays: 30,
     emailTokenTtlMinutes: 60,
@@ -58,7 +60,7 @@ export function buildTestHarness(): TestHarness {
     loginWindowMinutes: 15,
   });
 
-  const rbac = createRbacService({ storage, clock: systemClock });
+  const rbac = createRbacService({ storage, clock });
 
   const config: Config = {
     env: 'test',
@@ -80,7 +82,7 @@ export function buildTestHarness(): TestHarness {
     allowedOrigins: [],
   };
 
-  return { storage, tokens, auth, rbac, sent, config };
+  return { storage, tokens, auth, rbac, sent, config, clock };
 }
 
 /** Register + verify a user, then grant them the built-in `admin` role. */

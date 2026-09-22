@@ -127,17 +127,23 @@ Phase 8  Maintenance & Iteration
 
 ---
 
-## Phase 5 — Testing & QA
+## Phase 5 — Testing & QA  ✅ (complete)
 **Goal:** Prove it works and stays working.
 
 - Scope:
-  - [ ] Unit tests (core auth + RBAC logic) — target ≥ 80% coverage
-  - [ ] Integration tests (end-to-end flows)
-  - [ ] Security testing (authz bypass, brute force, token abuse, injection)
-  - [ ] Negative & edge cases (malformed input, expired tokens, enumeration)
-  - [ ] Load/performance sanity against NFR targets
+  - [x] Unit tests (core auth + RBAC logic) — **~98% line / ~93% branch** (target was ≥ 80%)
+  - [x] Integration tests (end-to-end HTTP flows via Fastify `inject`)
+  - [x] Security testing (authz bypass, brute force/lockout, token reuse, injection-as-literal)
+  - [x] Negative & edge cases (malformed input, expired email/reset/refresh/access tokens, enumeration)
+  - [ ] Load/performance sanity against NFR targets — deferred (needs a perf harness)
+- Also delivered: coverage measurement (`@vitest/coverage-v8`) with a **threshold gate**
+  (≥90% lines / ≥88% branches) wired into CI; **119 tests** across 12 files.
 - Exit criteria: All test suites green; coverage target met; known-issue list triaged.
+  ✅ **Met.**
 - Est. effort: **1–2 weeks** (runs partly in parallel with Phases 2–4)
+
+> Deferred: load/performance testing (NFR-4/5) — best done with a dedicated harness (e.g.
+> autocannon/k6) against a Postgres-backed deployment; slotted for later.
 
 ---
 

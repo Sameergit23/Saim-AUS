@@ -130,5 +130,69 @@ describe('rbacService', () => {
     it('throws NOT_FOUND for an unknown user', async () => {
       await expect(h.rbac.getUser('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' });
     });
+
+    it('re-enables a disabled user', async () => {
+      const userId = await makeUser('reenable@example.com');
+      await h.rbac.setUserEnabled(userId, false, ACTOR);
+      const view = await h.rbac.setUserEnabled(userId, true, ACTOR);
+      expect(view.status).toBe('active');
+    });
+  });
+
+  describe('error paths', () => {
+    it('rejects updating a non-existent role', async () => {
+      await expect(h.rbac.updateRole('ghost', { description: 'x' }, ACTOR)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+    });
+
+    it('rejects renaming a role onto an existing name', async () => {
+      const a = await h.rbac.createRole('alpha', null, ACTOR);
+      await h.rbac.createRole('beta', null, ACTOR);
+      await expect(h.rbac.updateRole(a.id, { name: 'beta' }, ACTOR)).rejects.toMatchObject({
+        code: 'CONFLICT',
+      });
+    });
+
+    it('rejects deleting a non-existent role', async () => {
+      await expect(h.rbac.deleteRole('ghost', ACTOR)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('rejects a duplicate permission name', async () => {
+      await h.rbac.createPermission('post:write', null, ACTOR);
+      await expect(h.rbac.createPermission('post:write', null, ACTOR)).rejects.toMatchObject({
+        code: 'CONFLICT',
+      });
+    });
+
+    it('rejects attaching permissions to a non-existent role', async () => {
+      await expect(h.rbac.attachPermissions('ghost', [], ACTOR)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+    });
+
+    it('rejects detaching from a non-existent role', async () => {
+      await expect(h.rbac.detachPermission('ghost', 'p', ACTOR)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+    });
+
+    it('rejects revoking a role from a non-existent user', async () => {
+      await expect(h.rbac.revokeRoleFromUser('ghost', 'r', ACTOR)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+    });
+
+    it('rejects fetching permissions for a non-existent role', async () => {
+      await expect(h.rbac.getRoleWithPermissions('ghost')).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+    });
+
+    it('updates a custom role description', async () => {
+      const role = await h.rbac.createRole('editor', 'old', ACTOR);
+      const updated = await h.rbac.updateRole(role.id, { description: 'new' }, ACTOR);
+      expect(updated.description).toBe('new');
+    });
   });
 });

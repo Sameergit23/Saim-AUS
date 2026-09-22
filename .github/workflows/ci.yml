@@ -29,8 +29,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test
-        run: npm test
+      - name: Test with coverage
+        run: npm run test:coverage
 
       # Fail the build on known vulnerabilities in production dependencies (SEC-11).
       - name: Audit production dependencies

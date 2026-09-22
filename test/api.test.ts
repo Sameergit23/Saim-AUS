@@ -121,4 +121,67 @@ describe('HTTP API', () => {
     });
     expect(again.statusCode).toBe(401);
   });
+
+  it('rejects an invalid email-verification token with 401', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/verify-email',
+      payload: { token: 'not-a-real-token' },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('INVALID_TOKEN');
+  });
+
+  it('completes the forgot -> reset password flow over HTTP', async () => {
+    await registerVerifyLogin('reset@example.com', 'Str0ng!Passphrase');
+
+    const forgot = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/password/forgot',
+      payload: { email: 'reset@example.com' },
+    });
+    expect(forgot.statusCode).toBe(202);
+
+    const resetToken = tokenFromLink(h.sent.at(-1)!.link);
+    const reset = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/password/reset',
+      payload: { token: resetToken, newPassword: 'Rese7!Passphrase' },
+    });
+    expect(reset.statusCode).toBe(200);
+
+    // new password works, old one does not
+    const good = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'reset@example.com', password: 'Rese7!Passphrase' },
+    });
+    expect(good.statusCode).toBe(200);
+    const bad = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'reset@example.com', password: 'Str0ng!Passphrase' },
+    });
+    expect(bad.statusCode).toBe(401);
+  });
+
+  it('changes the password for an authenticated user over HTTP', async () => {
+    const login = await registerVerifyLogin('change@example.com', 'Str0ng!Passphrase');
+    const accessToken = login.json().accessToken as string;
+
+    const change = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/password/change',
+      headers: { authorization: `Bearer ${accessToken}` },
+      payload: { currentPassword: 'Str0ng!Passphrase', newPassword: 'Chang3d!Passphrase' },
+    });
+    expect(change.statusCode).toBe(200);
+
+    const relogin = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'change@example.com', password: 'Chang3d!Passphrase' },
+    });
+    expect(relogin.statusCode).toBe(200);
+  });
 });

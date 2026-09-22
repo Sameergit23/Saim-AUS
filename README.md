@@ -3,10 +3,10 @@
 A **free, open-source, secure** authentication system with **Role-Based Access Control (RBAC)**
 that any developer can drop into their project.
 
-> Status: **Phase 4 — Security hardening implemented** ✅
-> Full auth + RBAC, now hardened with account lockout, CSRF protection, security headers,
-> JWT signing-key rotation, a CI pipeline (with CVE scanning), and a disclosure policy.
-> **68 tests passing · 0 production-dependency vulnerabilities.**
+> Status: **Phase 5 — Testing & QA complete** ✅
+> Full auth + RBAC + security hardening, now backed by a comprehensive, **coverage-gated**
+> test suite: **119 tests**, ~98% line / ~93% branch coverage on core, enforced in CI.
+> **0 production-dependency vulnerabilities.**
 
 ## Vision
 
@@ -46,10 +46,12 @@ npm run migrate
 |---------|--------------|
 | `npm run dev` | Start with hot reload |
 | `npm start` | Start once |
-| `npm test` | Run the test suite (38 tests) |
+| `npm test` | Run the test suite (119 tests) |
+| `npm run test:coverage` | Run tests with a coverage gate (≥90% lines) |
 | `npm run typecheck` | Type-check with `tsc` |
 | `npm run lint` / `npm run format` | Lint / format |
 | `npm run migrate` | Apply the PostgreSQL schema |
+| `npm run grant-admin -- <email>` | Promote a user to admin |
 
 ### Try it (curl)
 

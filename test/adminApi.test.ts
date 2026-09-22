@@ -204,5 +204,102 @@ describe('Admin API (RBAC enforcement)', () => {
       expect(login.statusCode).toBe(403);
       expect(login.json().error.code).toBe('ACCOUNT_DISABLED');
     });
+
+    it('re-enables a disabled user via the API', async () => {
+      const token = await adminToken();
+      await registerAndVerify(h, 'toggle@example.com', 'Toggle!Passphrase9');
+      const id = (await h.storage.users.findByEmail('toggle@example.com'))!.id;
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/users/${id}/disable`,
+        headers: authHeader(token),
+      });
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/users/${id}/enable`,
+        headers: authHeader(token),
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().status).toBe('active');
+    });
+  });
+
+  describe('full role lifecycle over HTTP', () => {
+    it('gets a user, lists permissions, and updates/detaches/revokes/deletes', async () => {
+      const token = await adminToken();
+      const h2 = authHeader(token);
+
+      await registerAndVerify(h, 'lifecycle@example.com', 'Life!Passphrase9');
+      const memberId = (await h.storage.users.findByEmail('lifecycle@example.com'))!.id;
+
+      // get single user
+      const userRes = await app.inject({ method: 'GET', url: `/api/v1/admin/users/${memberId}`, headers: h2 });
+      expect(userRes.statusCode).toBe(200);
+      expect(userRes.json().email).toBe('lifecycle@example.com');
+
+      // list permissions (built-ins present)
+      const permsRes = await app.inject({ method: 'GET', url: '/api/v1/admin/permissions', headers: h2 });
+      expect(permsRes.statusCode).toBe(200);
+      expect(permsRes.json().permissions.length).toBeGreaterThan(0);
+
+      // create role + permission, attach, assign
+      const roleId = (
+        await app.inject({ method: 'POST', url: '/api/v1/admin/roles', headers: h2, payload: { name: 'editor' } })
+      ).json().id as string;
+      const permId = (
+        await app.inject({
+          method: 'POST',
+          url: '/api/v1/admin/permissions',
+          headers: h2,
+          payload: { name: 'post:write' },
+        })
+      ).json().id as string;
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/roles/${roleId}/permissions`,
+        headers: h2,
+        payload: { permissionIds: [permId] },
+      });
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/users/${memberId}/roles`,
+        headers: h2,
+        payload: { roleIds: [roleId] },
+      });
+
+      // get role with permissions
+      const roleRes = await app.inject({ method: 'GET', url: `/api/v1/admin/roles/${roleId}`, headers: h2 });
+      expect(roleRes.json().permissions.map((p: { name: string }) => p.name)).toContain('post:write');
+
+      // update role description
+      const patchRes = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/roles/${roleId}`,
+        headers: h2,
+        payload: { description: 'Editors' },
+      });
+      expect(patchRes.json().description).toBe('Editors');
+
+      // detach permission
+      const detachRes = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/admin/roles/${roleId}/permissions/${permId}`,
+        headers: h2,
+      });
+      expect(detachRes.statusCode).toBe(204);
+
+      // revoke role from user
+      const revokeRes = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/admin/users/${memberId}/roles/${roleId}`,
+        headers: h2,
+      });
+      expect(revokeRes.statusCode).toBe(200);
+      expect(revokeRes.json().roles).not.toContain('editor');
+
+      // delete the (now custom) role
+      const delRes = await app.inject({ method: 'DELETE', url: `/api/v1/admin/roles/${roleId}`, headers: h2 });
+      expect(delRes.statusCode).toBe(204);
+    });
   });
 });

@@ -1,3 +1,4 @@
+import { SignJWT } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { createTokenService } from '../src/core/tokens/tokenService.js';
 import { AppError } from '../src/core/domain/errors.js';
@@ -42,6 +43,33 @@ describe('tokenService', () => {
 
   it('rejects garbage input', async () => {
     await expect(svc.verifyAccessToken('not.a.jwt')).rejects.toBeInstanceOf(AppError);
+  });
+
+  it('defensively coerces malformed claim types to safe defaults', async () => {
+    const key = new TextEncoder().encode(secret);
+    const token = await new SignJWT({ roles: 'admin', perms: 'x', permVer: 'nope' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer('saim-aus')
+      .setSubject('u')
+      .setIssuedAt()
+      .setExpirationTime('15m')
+      .sign(key);
+    const claims = await svc.verifyAccessToken(token);
+    expect(claims.roles).toEqual([]);
+    expect(claims.perms).toEqual([]);
+    expect(claims.permVer).toBe(0);
+  });
+
+  it('rejects an expired token', async () => {
+    const key = new TextEncoder().encode(secret);
+    const expired = await new SignJWT({ roles: [], perms: [], permVer: 1 })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer('saim-aus')
+      .setSubject('u')
+      .setIssuedAt(Math.floor(Date.now() / 1000) - 3600)
+      .setExpirationTime(Math.floor(Date.now() / 1000) - 60) // expired a minute ago
+      .sign(key);
+    await expect(svc.verifyAccessToken(expired)).rejects.toBeInstanceOf(AppError);
   });
 
   describe('key rotation', () => {
