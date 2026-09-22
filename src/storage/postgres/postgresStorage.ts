@@ -1,6 +1,8 @@
 import type {
   EmailTokenRecord,
+  Permission,
   RefreshTokenRecord,
+  Role,
   User,
 } from '../../core/domain/types.js';
 import type {
@@ -59,6 +61,14 @@ function mapEmailToken(row: any): EmailTokenRecord {
   };
 }
 
+function mapRole(row: any): Role {
+  return { id: row.id, name: row.name, description: row.description, isSystem: row.is_system };
+}
+
+function mapPermission(row: any): Permission {
+  return { id: row.id, name: row.name, description: row.description };
+}
+
 export function createPostgresStorage(databaseUrl: string): Storage {
   const pool: Pool = createPool(databaseUrl);
 
@@ -107,6 +117,17 @@ export function createPostgresStorage(databaseUrl: string): Storage {
       );
       if (!rows[0]) throw new Error(`User not found: ${id}`);
       return mapUser(rows[0]);
+    },
+    async list(limit, offset) {
+      const { rows } = await pool.query(
+        'SELECT * FROM users ORDER BY created_at ASC LIMIT $1 OFFSET $2',
+        [limit, offset],
+      );
+      return rows.map(mapUser);
+    },
+    async count() {
+      const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM users');
+      return rows[0].n as number;
     },
   };
 
@@ -201,6 +222,114 @@ export function createPostgresStorage(databaseUrl: string): Storage {
         [userId],
       );
       return rows.map((r: any) => r.name as string);
+    },
+
+    async listRoles() {
+      const { rows } = await pool.query('SELECT * FROM roles ORDER BY name ASC');
+      return rows.map(mapRole);
+    },
+    async getRoleById(id) {
+      const { rows } = await pool.query('SELECT * FROM roles WHERE id = $1', [id]);
+      return rows[0] ? mapRole(rows[0]) : null;
+    },
+    async getRoleByName(name) {
+      const { rows } = await pool.query('SELECT * FROM roles WHERE name = $1', [name]);
+      return rows[0] ? mapRole(rows[0]) : null;
+    },
+    async createRole(name, description) {
+      const { rows } = await pool.query(
+        'INSERT INTO roles (name, description, is_system) VALUES ($1, $2, FALSE) RETURNING *',
+        [name, description],
+      );
+      return mapRole(rows[0]);
+    },
+    async updateRole(id, patch) {
+      const set: string[] = [];
+      const values: unknown[] = [];
+      let i = 1;
+      if (patch.name !== undefined) {
+        set.push(`name = $${i++}`);
+        values.push(patch.name);
+      }
+      if (patch.description !== undefined) {
+        set.push(`description = $${i++}`);
+        values.push(patch.description);
+      }
+      if (set.length === 0) {
+        const existing = await this.getRoleById(id);
+        if (!existing) throw new Error(`Role not found: ${id}`);
+        return existing;
+      }
+      values.push(id);
+      const { rows } = await pool.query(
+        `UPDATE roles SET ${set.join(', ')} WHERE id = $${i} RETURNING *`,
+        values,
+      );
+      if (!rows[0]) throw new Error(`Role not found: ${id}`);
+      return mapRole(rows[0]);
+    },
+    async deleteRole(id) {
+      await pool.query('DELETE FROM roles WHERE id = $1', [id]);
+    },
+
+    async listPermissions() {
+      const { rows } = await pool.query('SELECT * FROM permissions ORDER BY name ASC');
+      return rows.map(mapPermission);
+    },
+    async getPermissionById(id) {
+      const { rows } = await pool.query('SELECT * FROM permissions WHERE id = $1', [id]);
+      return rows[0] ? mapPermission(rows[0]) : null;
+    },
+    async getPermissionByName(name) {
+      const { rows } = await pool.query('SELECT * FROM permissions WHERE name = $1', [name]);
+      return rows[0] ? mapPermission(rows[0]) : null;
+    },
+    async createPermission(name, description) {
+      const { rows } = await pool.query(
+        'INSERT INTO permissions (name, description) VALUES ($1, $2) RETURNING *',
+        [name, description],
+      );
+      return mapPermission(rows[0]);
+    },
+    async getPermissionsForRole(roleId) {
+      const { rows } = await pool.query(
+        `SELECT p.* FROM role_permissions rp
+         JOIN permissions p ON p.id = rp.permission_id
+         WHERE rp.role_id = $1 ORDER BY p.name ASC`,
+        [roleId],
+      );
+      return rows.map(mapPermission);
+    },
+    async attachPermission(roleId, permissionId) {
+      await pool.query(
+        `INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [roleId, permissionId],
+      );
+    },
+    async detachPermission(roleId, permissionId) {
+      await pool.query(
+        'DELETE FROM role_permissions WHERE role_id = $1 AND permission_id = $2',
+        [roleId, permissionId],
+      );
+    },
+
+    async getRolesForUser(userId) {
+      const { rows } = await pool.query(
+        `SELECT r.* FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+         WHERE ur.user_id = $1 ORDER BY r.name ASC`,
+        [userId],
+      );
+      return rows.map(mapRole);
+    },
+    async assignRoleToUser(userId, roleId) {
+      await pool.query(
+        `INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [userId, roleId],
+      );
+    },
+    async revokeRoleFromUser(userId, roleId) {
+      await pool.query('DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2', [userId, roleId]);
     },
   };
 

@@ -1,5 +1,6 @@
 import type { Config } from '../src/config/index.js';
 import { createAuthService, type AuthService } from '../src/core/authn/authService.js';
+import { createRbacService, type RbacService } from '../src/core/authz/rbacService.js';
 import { createPasswordService } from '../src/core/password/passwordService.js';
 import { createTokenService, type TokenService } from '../src/core/tokens/tokenService.js';
 import { systemClock } from '../src/infra/clock.js';
@@ -19,6 +20,7 @@ export interface TestHarness {
   storage: Storage;
   tokens: TokenService;
   auth: AuthService;
+  rbac: RbacService;
   sent: SentEmail[];
   config: Config;
 }
@@ -54,6 +56,8 @@ export function buildTestHarness(): TestHarness {
     publicBaseUrl: 'http://localhost:3000',
   });
 
+  const rbac = createRbacService({ storage, clock: systemClock });
+
   const config: Config = {
     env: 'test',
     host: '127.0.0.1',
@@ -70,7 +74,19 @@ export function buildTestHarness(): TestHarness {
     publicBaseUrl: 'http://localhost:3000',
   };
 
-  return { storage, tokens, auth, sent, config };
+  return { storage, tokens, auth, rbac, sent, config };
+}
+
+/** Register + verify a user, then grant them the built-in `admin` role. */
+export async function registerAdmin(
+  harness: TestHarness,
+  email = 'admin@example.com',
+  password = 'Adm1n!Passphrase',
+): Promise<{ email: string; password: string; id: string }> {
+  await registerAndVerify(harness, email, password);
+  const user = (await harness.storage.users.findByEmail(email))!;
+  await harness.storage.roles.assignRoleByName(user.id, 'admin');
+  return { email, password, id: user.id };
 }
 
 /** Extract the opaque token from a verification/reset link. */

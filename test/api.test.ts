@@ -9,7 +9,13 @@ describe('HTTP API', () => {
 
   beforeEach(async () => {
     h = buildTestHarness();
-    app = await buildServer({ config: h.config, auth: h.auth, tokens: h.tokens, logger: false });
+    app = await buildServer({
+      config: h.config,
+      auth: h.auth,
+      rbac: h.rbac,
+      tokens: h.tokens,
+      logger: false,
+    });
     await app.ready();
   });
 

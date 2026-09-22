@@ -37,3 +37,38 @@ export const ChangePasswordBody = Type.Object(
   { additionalProperties: false },
 );
 export type ChangePasswordBody = Static<typeof ChangePasswordBody>;
+
+// ---- Admin / RBAC schemas ----
+const Name = Type.String({ pattern: '^[a-zA-Z0-9_:.-]{2,64}$' });
+const Description = Type.Optional(Type.String({ maxLength: 256 }));
+const Id = Type.String({ minLength: 8, maxLength: 64 });
+
+export const CreateRoleBody = Type.Object(
+  { name: Name, description: Description },
+  { additionalProperties: false },
+);
+export type CreateRoleBody = Static<typeof CreateRoleBody>;
+
+export const UpdateRoleBody = Type.Object(
+  { name: Type.Optional(Name), description: Description },
+  { additionalProperties: false },
+);
+export type UpdateRoleBody = Static<typeof UpdateRoleBody>;
+
+export const CreatePermissionBody = Type.Object(
+  { name: Name, description: Description },
+  { additionalProperties: false },
+);
+export type CreatePermissionBody = Static<typeof CreatePermissionBody>;
+
+export const AttachPermissionsBody = Type.Object(
+  { permissionIds: Type.Array(Id, { minItems: 1, maxItems: 100 }) },
+  { additionalProperties: false },
+);
+export type AttachPermissionsBody = Static<typeof AttachPermissionsBody>;
+
+export const AssignRolesBody = Type.Object(
+  { roleIds: Type.Array(Id, { minItems: 1, maxItems: 50 }) },
+  { additionalProperties: false },
+);
+export type AssignRolesBody = Static<typeof AssignRolesBody>;

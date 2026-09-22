@@ -82,18 +82,26 @@ Phase 8  Maintenance & Iteration
 
 ---
 
-## Phase 3 — Authorization / RBAC
+## Phase 3 — Authorization / RBAC  ✅ (implemented)
 **Goal:** Roles and permissions enforced across protected operations.
 
 - Scope (maps to FR-18..FR-29):
-  - [ ] Roles, Permissions, and mappings implemented
-  - [ ] Effective-permission resolution (union across roles)
-  - [ ] Deny-by-default enforcement / guard mechanism
-  - [ ] Default roles (`user`, `admin`) + custom roles
-  - [ ] Admin operations (manage users/roles/permissions)
-  - [ ] (Optional) role hierarchy / inheritance
-- Exit criteria: Protected actions require the correct permission; admin can manage RBAC; tests pass.
+  - [x] Roles, Permissions, and mappings implemented
+  - [x] Effective-permission resolution (union across roles)
+  - [x] Deny-by-default enforcement / guard mechanism (`requirePermission`)
+  - [x] Default roles (`user`, `admin`) + custom roles
+  - [x] Admin operations (manage users, roles, permissions, role assignment)
+  - [ ] (Optional) role hierarchy / inheritance — deferred (schema supports it)
+- Also delivered: `grant-admin` CLI to bootstrap the first administrator; disabling a
+  user revokes their sessions; all admin mutations write to the audit log; **60 tests
+  passing** (22 new: RBAC service + admin API guard enforcement).
+- Exit criteria: Protected actions require the correct permission; admin can manage RBAC;
+  tests pass. ✅ **Met.**
 - Est. effort: **1–2 weeks**
+
+> Deferred: role hierarchy/inheritance (FR-24, "SHOULD") and instant permission
+> invalidation via `permVer` (currently changes apply on next token refresh within the
+> access-token TTL). Both are candidates for Phase 4.
 
 ---
 

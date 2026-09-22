@@ -22,3 +22,20 @@ export function createAuthenticate(tokens: TokenService) {
     request.user = await tokens.verifyAccessToken(token);
   };
 }
+
+/**
+ * Builds a preHandler enforcing that the caller holds a specific permission.
+ * Deny-by-default (SEC-9): a request without the permission is rejected with 403.
+ * Must run AFTER `authenticate` so `request.user` (and its permission snapshot) is set.
+ */
+export function createRequirePermission(permission: string) {
+  return async function requirePermission(
+    request: FastifyRequest,
+    _reply: FastifyReply,
+  ): Promise<void> {
+    const perms = request.user?.perms ?? [];
+    if (!perms.includes(permission)) {
+      throw Errors.forbidden(`Missing permission: ${permission}`);
+    }
+  };
+}

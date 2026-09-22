@@ -2,7 +2,9 @@ import type {
   AuditEvent,
   EmailTokenPurpose,
   EmailTokenRecord,
+  Permission,
   RefreshTokenRecord,
+  Role,
   User,
   UserStatus,
 } from '../core/domain/types.js';
@@ -23,6 +25,8 @@ export interface UserRepo {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   update(id: string, patch: UserPatch): Promise<User>;
+  list(limit: number, offset: number): Promise<User[]>;
+  count(): Promise<number>;
 }
 
 export interface NewRefreshToken {
@@ -58,9 +62,32 @@ export interface EmailTokenRepo {
 }
 
 export interface RoleRepo {
+  // --- Auth-time resolution (used when issuing tokens) ---
   assignRoleByName(userId: string, roleName: string): Promise<void>;
   getRoleNames(userId: string): Promise<string[]>;
   getPermissionNames(userId: string): Promise<string[]>;
+
+  // --- Role management ---
+  listRoles(): Promise<Role[]>;
+  getRoleById(id: string): Promise<Role | null>;
+  getRoleByName(name: string): Promise<Role | null>;
+  createRole(name: string, description: string | null): Promise<Role>;
+  updateRole(id: string, patch: { name?: string; description?: string | null }): Promise<Role>;
+  deleteRole(id: string): Promise<void>;
+
+  // --- Permission management ---
+  listPermissions(): Promise<Permission[]>;
+  getPermissionById(id: string): Promise<Permission | null>;
+  getPermissionByName(name: string): Promise<Permission | null>;
+  createPermission(name: string, description: string | null): Promise<Permission>;
+  getPermissionsForRole(roleId: string): Promise<Permission[]>;
+  attachPermission(roleId: string, permissionId: string): Promise<void>;
+  detachPermission(roleId: string, permissionId: string): Promise<void>;
+
+  // --- User ↔ role assignment ---
+  getRolesForUser(userId: string): Promise<Role[]>;
+  assignRoleToUser(userId: string, roleId: string): Promise<void>;
+  revokeRoleFromUser(userId: string, roleId: string): Promise<void>;
 }
 
 export interface AuditRepo {

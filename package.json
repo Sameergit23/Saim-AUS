@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "migrate": "tsx src/storage/postgres/migrate.ts"
+    "migrate": "tsx src/storage/postgres/migrate.ts",
+    "grant-admin": "tsx src/cli/grantAdmin.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

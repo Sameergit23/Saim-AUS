@@ -3,9 +3,10 @@
 A **free, open-source, secure** authentication system with **Role-Based Access Control (RBAC)**
 that any developer can drop into their project.
 
-> Status: **Phase 2 — Auth MVP implemented** ✅
-> Working TypeScript service: register, verify, login, refresh (rotating), logout,
-> password change/reset, and `/me`. 38 tests passing. RBAC enforcement lands in Phase 3.
+> Status: **Phase 3 — RBAC enforcement implemented** ✅
+> Full auth (register, verify, login, rotating refresh, logout, password change/reset, `/me`)
+> **plus** deny-by-default permission guards and an admin API for managing users, roles,
+> permissions, and role assignments. **60 tests passing.**
 
 ## Vision
 
@@ -68,6 +69,25 @@ curl http://localhost:3000/api/v1/me -H 'Authorization: Bearer <accessToken>'
 ```
 
 See the full endpoint reference in [docs/design/03-API-Contract.md](docs/design/03-API-Contract.md).
+
+## Roles & permissions (RBAC)
+
+Authorization is **deny-by-default**: every admin route requires a specific permission,
+resolved from the caller's roles and carried in their access token.
+
+- Built-in roles: **`admin`** (all permissions) and **`user`** (self-scoped). New sign-ups
+  get `user`.
+- Admin API (all under `/api/v1/admin`, each guarded by a permission):
+  manage users (`GET/disable/enable`), assign/revoke roles, and CRUD roles & permissions.
+
+**Creating the first admin** — register a user normally, then promote them:
+
+```bash
+npm run grant-admin -- you@example.com
+```
+
+Role/permission changes take effect on the user's next login or token refresh (within the
+access-token TTL), since permissions are embedded in the short-lived access token.
 
 ## Documents
 

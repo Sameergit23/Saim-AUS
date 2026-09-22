@@ -1,6 +1,7 @@
 import { buildServer } from './api/server.js';
 import { loadConfig } from './config/index.js';
 import { createAuthService } from './core/authn/authService.js';
+import { createRbacService } from './core/authz/rbacService.js';
 import { createPasswordService } from './core/password/passwordService.js';
 import { createTokenService } from './core/tokens/tokenService.js';
 import { systemClock } from './infra/clock.js';
@@ -32,7 +33,9 @@ async function main(): Promise<void> {
     publicBaseUrl: config.publicBaseUrl,
   });
 
-  const app = await buildServer({ config, auth, tokens });
+  const rbac = createRbacService({ storage, clock: systemClock });
+
+  const app = await buildServer({ config, auth, rbac, tokens });
 
   const shutdown = async (signal: string): Promise<void> => {
     app.log.info(`Received ${signal}, shutting down...`);

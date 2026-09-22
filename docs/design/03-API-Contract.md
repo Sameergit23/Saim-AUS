@@ -234,3 +234,15 @@ Lets a protected backend verify a token and read the principal (FR-34).
 ## 9. Contract stability
 - Breaking changes ⇒ new version (`/api/v2`) per SemVer (ADR-008).
 - OpenAPI spec is the source of truth and is generated from route schemas.
+
+## 10. Phase 3 implementation notes (RBAC)
+Additions made while implementing the admin surface:
+- **`POST /admin/permissions`** (requires `role:manage`) — create a custom permission
+  (`{ name, description? }`). Apps define their own capability names (e.g. `post:write`);
+  this was added beyond the original draft so the permission catalog is extensible.
+- **Bootstrapping the first admin** is out-of-band (no HTTP endpoint, by design): an
+  operator runs `npm run grant-admin -- <email>` to grant the built-in `admin` role to a
+  registered user. This avoids shipping a privileged self-service escalation path.
+- **`introspect`** and **MFA** endpoints from §2/§5 remain planned (not in the Phase 3 build).
+- Permission changes apply on the user's next login/refresh (token-embedded snapshot);
+  instant invalidation via `permVer` is deferred to Phase 4.

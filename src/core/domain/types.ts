@@ -23,6 +23,30 @@ export interface PublicUser {
   permissions: string[];
 }
 
+export interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+}
+
+export interface Permission {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+/** Admin-facing view of a user, including assigned role names. */
+export interface AdminUserView {
+  id: string;
+  email: string;
+  status: UserStatus;
+  emailVerified: boolean;
+  roles: string[];
+  createdAt: Date;
+  lastLoginAt: Date | null;
+}
+
 export interface RefreshTokenRecord {
   id: string;
   userId: string;
