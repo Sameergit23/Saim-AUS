@@ -116,6 +116,7 @@ TOTP secrets are **encrypted at rest** (AES-256-GCM) and recovery codes are stor
 
 | Document | Purpose |
 |----------|---------|
+| 📖 [docs/THE-MAKING-OF-SAIM-AUS.md](docs/THE-MAKING-OF-SAIM-AUS.md) | **The story book** — how it was built, the tech & why, how each feature works, problems faced, all in plain English |
 | [docs/SRS-Requirements.md](docs/SRS-Requirements.md) | Software Requirements Specification — what the system must do |
 | [docs/Roadmap.md](docs/Roadmap.md) | SDLC roadmap — phases, milestones, and deliverables |
 | [docs/design/00-Decisions-ADR.md](docs/design/00-Decisions-ADR.md) | Architecture Decision Records — the stack/auth/DB choices |
