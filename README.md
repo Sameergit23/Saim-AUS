@@ -18,7 +18,7 @@ Saim-AUS aims to be a reusable, well-tested, security-first building block that 
 - Account protection (rate limiting, lockout, optional MFA)
 - Audit logging
 
-Free to use under a permissive open-source license (MIT or Apache-2.0 — to be finalized).
+Free to use under the [MIT License](LICENSE) — use it in any project, including commercial.
 
 ## Documents
 
