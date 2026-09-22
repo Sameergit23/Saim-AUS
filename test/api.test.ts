@@ -47,6 +47,15 @@ describe('HTTP API', () => {
     expect(res.json()).toEqual({ status: 'ok' });
   });
 
+  it('serves the generated OpenAPI spec', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/openapi.json' });
+    expect(res.statusCode).toBe(200);
+    const spec = res.json();
+    expect(spec.openapi).toBeTruthy();
+    expect(spec.info.title).toBe('Saim-AUS API');
+    expect(spec.paths['/api/v1/auth/login']).toBeTruthy();
+  });
+
   it('register returns a generic 202', async () => {
     const res = await register('api@example.com', 'Str0ng!Passphrase');
     expect(res.statusCode).toBe(202);

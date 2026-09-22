@@ -80,6 +80,7 @@ export function buildTestHarness(opts: { clock?: Clock } = {}): TestHarness {
     loginMaxAttempts: 5,
     loginWindowMinutes: 15,
     allowedOrigins: [],
+    docsUi: true,
   };
 
   return { storage, tokens, auth, rbac, sent, config, clock };

@@ -1,6 +1,8 @@
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Config } from '../config/index.js';
 import type { AuthService } from '../core/authn/authService.js';
@@ -32,6 +34,31 @@ export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
   });
 
   app.setErrorHandler(errorHandler);
+
+  // OpenAPI generation from route schemas. Registered before routes so it can
+  // collect their schemas. Served as JSON at /api/v1/openapi.json and as an
+  // interactive UI at /docs (see below).
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: 'Saim-AUS API',
+        description: 'Free, secure authentication & authorization service with RBAC.',
+        version: '0.1.0',
+        license: { name: 'MIT', url: 'https://opensource.org/licenses/MIT' },
+      },
+      tags: [
+        { name: 'Auth', description: 'Registration, login, tokens, password' },
+        { name: 'Profile', description: 'Current-user endpoints' },
+        { name: 'Admin', description: 'User, role, and permission management (RBAC)' },
+        { name: 'Ops', description: 'Health and operational endpoints' },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        },
+      },
+    },
+  });
 
   // Security response headers (nosniff, frame-options, HSTS, etc.). CSP is
   // disabled since this service returns JSON, not HTML (SEC / threat model).
@@ -66,6 +93,13 @@ export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
     },
     { prefix: '/api/v1/admin' },
   );
+
+  // Machine-readable spec is always available; the interactive UI is opt-in and
+  // off by default in production (smaller attack surface).
+  app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger());
+  if (config.docsUi) {
+    await app.register(swaggerUi, { routePrefix: '/docs' });
+  }
 
   return app;
 }

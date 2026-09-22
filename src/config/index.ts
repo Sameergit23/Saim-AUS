@@ -23,6 +23,8 @@ export interface Config {
   loginMaxAttempts: number;
   loginWindowMinutes: number;
   allowedOrigins: string[];
+  // Docs (Phase 6): interactive Swagger UI at /docs — off by default in production.
+  docsUi: boolean;
 }
 
 function required(name: string): string {
@@ -88,5 +90,6 @@ export function loadConfig(): Config {
     loginMaxAttempts: toInt(optional('LOGIN_MAX_ATTEMPTS', '5'), 'LOGIN_MAX_ATTEMPTS'),
     loginWindowMinutes: toInt(optional('LOGIN_LOCKOUT_MINUTES', '15'), 'LOGIN_LOCKOUT_MINUTES'),
     allowedOrigins,
+    docsUi: optional('ENABLE_DOCS_UI', env === 'production' ? 'false' : 'true') === 'true',
   };
 }

@@ -147,32 +147,37 @@ Phase 8  Maintenance & Iteration
 
 ---
 
-## Phase 6 — Documentation & Developer Experience
+## Phase 6 — Documentation & Developer Experience  ✅ (complete)
 **Goal:** Someone else can adopt it in under 30 minutes (NFR-9).
 
 - Scope:
-  - [ ] Quick-start / getting-started guide
-  - [ ] API reference
-  - [ ] Integration example(s)
-  - [ ] Configuration & deployment guide
-  - [ ] Security & operations notes (how to run it safely)
-  - [ ] CONTRIBUTING + Code of Conduct + SECURITY.md (responsible disclosure)
-- Exit criteria: A fresh developer integrates the system using only the docs.
+  - [x] Quick-start / getting-started guide (README)
+  - [x] API reference — **generated OpenAPI spec + Swagger UI** (`/api/v1/openapi.json`, `/docs`)
+  - [x] Integration example ([guides/Integration.md](guides/Integration.md))
+  - [x] Configuration & deployment guide ([guides/Deployment.md](guides/Deployment.md))
+  - [x] Security & operations notes (deployment guide + `SECURITY.md`)
+  - [x] CONTRIBUTING + Code of Conduct + SECURITY.md
+- Exit criteria: A fresh developer integrates the system using only the docs. ✅ **Met.**
 - Est. effort: **3–5 days**
 
 ---
 
-## Phase 7 — Packaging, CI/CD & Release
+## Phase 7 — Packaging, CI/CD & Release  🟡 (automation ready; release is a manual step)
 **Goal:** Make it free and easy to obtain and run.
 
 - Scope:
-  - [ ] License file (MIT/Apache-2.0)
-  - [ ] Reproducible build + container image
-  - [ ] CI pipeline (lint, test, security scan) + CD for releases
-  - [ ] Versioning (SemVer) + changelog
-  - [ ] Public repository + v1.0.0 release
+  - [x] License file (MIT)
+  - [x] Container image (Dockerfile + .dockerignore)
+  - [x] CI pipeline (typecheck, lint, coverage, security audit) + CD release workflow
+  - [x] Versioning (SemVer) + changelog (CHANGELOG.md)
+  - [ ] **Public v1.0.0 release** — owner cuts the tag (`git push origin v1.0.0`) after a
+    one-time GitHub "read & write" Actions permission toggle
 - Exit criteria: A tagged, documented, installable v1.0.0 is publicly available.
+  ⟵ **awaiting the owner to cut the release**
 - Est. effort: **3–5 days**
+
+> A compiled/bundled slim container (vs. running via `tsx` with dev deps) and SBOM
+> generation are future optimizations.
 
 ---
 

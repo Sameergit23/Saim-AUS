@@ -3,10 +3,10 @@
 A **free, open-source, secure** authentication system with **Role-Based Access Control (RBAC)**
 that any developer can drop into their project.
 
-> Status: **Phase 5 — Testing & QA complete** ✅
-> Full auth + RBAC + security hardening, now backed by a comprehensive, **coverage-gated**
-> test suite: **119 tests**, ~98% line / ~93% branch coverage on core, enforced in CI.
-> **0 production-dependency vulnerabilities.**
+> Status: **Phases 6–7 — Docs & packaging** ✅ (release-ready)
+> Full auth + RBAC + hardening, coverage-gated tests, **OpenAPI docs + Swagger UI**, a
+> **Dockerfile**, and **release automation**. **120 tests · 0 prod vulnerabilities.**
+> Cutting the v1.0.0 release is a manual step — see [Releasing](#releasing).
 
 ## Vision
 
@@ -70,7 +70,12 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 curl http://localhost:3000/api/v1/me -H 'Authorization: Bearer <accessToken>'
 ```
 
-See the full endpoint reference in [docs/design/03-API-Contract.md](docs/design/03-API-Contract.md).
+### API reference
+
+- **Interactive docs (Swagger UI):** `http://localhost:3000/docs` (on outside production)
+- **OpenAPI spec (JSON):** `http://localhost:3000/api/v1/openapi.json`
+- **Guides:** [Integration](docs/guides/Integration.md) · [Deployment & Operations](docs/guides/Deployment.md)
+- **Full contract:** [docs/design/03-API-Contract.md](docs/design/03-API-Contract.md)
 
 ## Roles & permissions (RBAC)
 
@@ -103,6 +108,23 @@ access-token TTL), since permissions are embedded in the short-lived access toke
 | [docs/design/03-API-Contract.md](docs/design/03-API-Contract.md) | REST/JSON API contract — endpoints, errors, token claims |
 | [docs/design/04-Threat-Model.md](docs/design/04-Threat-Model.md) | STRIDE threat model + security mitigations checklist |
 | [docs/design/05-Engineering-Standards.md](docs/design/05-Engineering-Standards.md) | Coding, testing, branching, and CI standards |
+| [docs/guides/Integration.md](docs/guides/Integration.md) | How to protect your app with Saim-AUS |
+| [docs/guides/Deployment.md](docs/guides/Deployment.md) | Deployment, Docker, hardening, and operations |
+| [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [CHANGELOG.md](CHANGELOG.md) | Contribution, disclosure, and change history |
+
+## Releasing
+
+CI runs on every push (typecheck, lint, coverage gate, dependency audit). To cut a release,
+push a semver tag — the [release workflow](.github/workflows/release.yml) then verifies,
+builds and pushes a Docker image to GHCR, and creates a GitHub Release:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+> One-time GitHub setup: **Settings → Actions → General → Workflow permissions →
+> "Read and write permissions"** so the release can publish the image and the release notes.
 
 ## Key decisions (made in Phase 1 — see ADRs)
 
