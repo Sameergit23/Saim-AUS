@@ -88,6 +88,12 @@ export function buildTestHarness(opts: { clock?: Clock } = {}): TestHarness {
     allowedOrigins: [],
     docsUi: true,
     mfaSecretKey: null,
+    smtpHost: null,
+    smtpPort: 587,
+    smtpSecure: false,
+    smtpUser: null,
+    smtpPass: null,
+    emailFrom: 'Saim-AUS <no-reply@test>',
   };
 
   return { storage, tokens, auth, rbac, mfa, sent, config, clock };

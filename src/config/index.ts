@@ -28,6 +28,13 @@ export interface Config {
   // MFA (feature): key material for encrypting TOTP secrets at rest. Falls back to
   // JWT_SECRET when unset; set a dedicated value in production.
   mfaSecretKey: string | null;
+  // Email: when smtpHost is set, real emails are sent; otherwise links are logged.
+  smtpHost: string | null;
+  smtpPort: number;
+  smtpSecure: boolean;
+  smtpUser: string | null;
+  smtpPass: string | null;
+  emailFrom: string;
 }
 
 function required(name: string): string {
@@ -89,11 +96,21 @@ export function loadConfig(): Config {
     emailTokenTtlMinutes: toInt(optional('EMAIL_TOKEN_TTL_MINUTES', '60'), 'EMAIL_TOKEN_TTL_MINUTES'),
     cookieSecure: optional('COOKIE_SECURE', 'false') === 'true',
     cookieDomain: process.env.COOKIE_DOMAIN?.trim() || undefined,
-    publicBaseUrl: optional('PUBLIC_BASE_URL', 'http://localhost:3000'),
+    // Defaults to Render's auto-provided external URL when PUBLIC_BASE_URL is unset.
+    publicBaseUrl: optional(
+      'PUBLIC_BASE_URL',
+      process.env.RENDER_EXTERNAL_URL?.trim() || 'http://localhost:3000',
+    ),
     loginMaxAttempts: toInt(optional('LOGIN_MAX_ATTEMPTS', '5'), 'LOGIN_MAX_ATTEMPTS'),
     loginWindowMinutes: toInt(optional('LOGIN_LOCKOUT_MINUTES', '15'), 'LOGIN_LOCKOUT_MINUTES'),
     allowedOrigins,
     docsUi: optional('ENABLE_DOCS_UI', env === 'production' ? 'false' : 'true') === 'true',
     mfaSecretKey: process.env.MFA_SECRET_KEY?.trim() || null,
+    smtpHost: process.env.SMTP_HOST?.trim() || null,
+    smtpPort: toInt(optional('SMTP_PORT', '587'), 'SMTP_PORT'),
+    smtpSecure: optional('SMTP_SECURE', 'false') === 'true',
+    smtpUser: process.env.SMTP_USER?.trim() || null,
+    smtpPass: process.env.SMTP_PASS || null,
+    emailFrom: optional('EMAIL_FROM', 'Saim-AUS <no-reply@localhost>'),
   };
 }

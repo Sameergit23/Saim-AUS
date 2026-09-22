@@ -23,6 +23,10 @@ The pre-1.0 development series. Delivered so far (by SDLC phase):
   guides, contribution docs, Dockerfile, and release automation.
 - **MFA / TOTP:** authenticator-app two-factor auth with a two-step login challenge,
   one-time recovery codes, and TOTP secrets encrypted at rest (AES-256-GCM).
+- **Email delivery:** SMTP mailer (nodemailer) for real verification/reset emails,
+  enabled via `SMTP_*` env vars; falls back to console logging when unconfigured.
+- **Managed deploy:** `render.yaml` blueprint provisioning the service + a managed
+  PostgreSQL, with auto-generated secrets and migrations on deploy.
 
 ### Fixed
 - No-body `POST` requests sent with `Content-Type: application/json` (e.g. logout,

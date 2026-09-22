@@ -7,7 +7,8 @@ import { createPasswordService } from './core/password/passwordService.js';
 import { createTokenService } from './core/tokens/tokenService.js';
 import { systemClock } from './infra/clock.js';
 import { createCipher } from './infra/encryption.js';
-import { createConsoleMailer } from './infra/mailer.js';
+import { createConsoleMailer, type Mailer } from './infra/mailer.js';
+import { createSmtpMailer } from './infra/smtpMailer.js';
 import { createStorage } from './storage/index.js';
 
 /** Composition root: wire dependencies and start the server. */
@@ -22,7 +23,20 @@ async function main(): Promise<void> {
     kid: config.jwtKid,
     accessTokenTtl: config.accessTokenTtl,
   });
-  const mailer = createConsoleMailer((msg) => console.log(msg));
+  // Real email when SMTP is configured; otherwise log links to the console.
+  const mailer: Mailer = config.smtpHost
+    ? createSmtpMailer({
+        host: config.smtpHost,
+        port: config.smtpPort,
+        secure: config.smtpSecure,
+        user: config.smtpUser,
+        pass: config.smtpPass,
+        from: config.emailFrom,
+      })
+    : createConsoleMailer((msg) => console.log(msg));
+  if (!config.smtpHost && config.env === 'production') {
+    console.warn('[warn] SMTP not configured — verification/reset emails will only be logged.');
+  }
   const cipher = createCipher(config.mfaSecretKey ?? config.jwtSecret);
   const mfa = createMfaService({ storage, cipher });
 
