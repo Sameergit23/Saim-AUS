@@ -18,7 +18,7 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
-    dockerCommand: sh -c "npm run migrate && npm start"
+    dockerCommand: npm run start:prod
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
