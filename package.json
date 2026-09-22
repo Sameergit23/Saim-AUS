@@ -31,6 +31,7 @@
     "dotenv": "^16.4.5",
     "fastify": "^5.2.1",
     "jose": "^5.9.6",
+    "otpauth": "^9.3.6",
     "pg": "^8.13.1"
   },
   "devDependencies": {

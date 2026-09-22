@@ -28,9 +28,19 @@ export function errorHandler(
   }
 
   // Rate limiting (from @fastify/rate-limit).
-  if ((error as FastifyError).statusCode === 429) {
+  const statusCode = (error as FastifyError).statusCode;
+  if (statusCode === 429) {
     reply.status(429).send({
       error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again later.', requestId },
+    });
+    return;
+  }
+
+  // Other client errors surfaced by Fastify (bad content-type, empty/malformed
+  // body, payload too large, …) are 4xx — return them as such, not as 500.
+  if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) {
+    reply.status(statusCode).send({
+      error: { code: (error as FastifyError).code ?? 'BAD_REQUEST', message: error.message, requestId },
     });
     return;
   }

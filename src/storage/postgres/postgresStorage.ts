@@ -12,6 +12,7 @@ import type {
   NewEmailToken,
   NewRefreshToken,
   NewUser,
+  RecoveryCodeRepo,
   RefreshTokenRepo,
   RoleRepo,
   Storage,
@@ -29,6 +30,8 @@ function mapUser(row: any): User {
     passwordHash: row.password_hash,
     status: row.status,
     emailVerified: row.email_verified,
+    mfaEnabled: row.mfa_enabled,
+    mfaSecret: row.mfa_secret,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     lastLoginAt: row.last_login_at,
@@ -109,6 +112,14 @@ export function createPostgresStorage(databaseUrl: string): Storage {
       if (patch.lastLoginAt !== undefined) {
         set.push(`last_login_at = $${i++}`);
         values.push(patch.lastLoginAt);
+      }
+      if (patch.mfaEnabled !== undefined) {
+        set.push(`mfa_enabled = $${i++}`);
+        values.push(patch.mfaEnabled);
+      }
+      if (patch.mfaSecret !== undefined) {
+        set.push(`mfa_secret = $${i++}`);
+        values.push(patch.mfaSecret);
       }
       set.push('updated_at = now()');
       values.push(id);
@@ -374,6 +385,46 @@ export function createPostgresStorage(databaseUrl: string): Storage {
     },
   };
 
+  const recoveryCodes: RecoveryCodeRepo = {
+    async replaceForUser(userId, codeHashes) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query('DELETE FROM mfa_recovery_codes WHERE user_id = $1', [userId]);
+        for (const codeHash of codeHashes) {
+          await client.query(
+            'INSERT INTO mfa_recovery_codes (user_id, code_hash) VALUES ($1, $2)',
+            [userId, codeHash],
+          );
+        }
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+    async consume(userId, codeHash) {
+      const { rowCount } = await pool.query(
+        `UPDATE mfa_recovery_codes SET consumed_at = now()
+         WHERE user_id = $1 AND code_hash = $2 AND consumed_at IS NULL`,
+        [userId, codeHash],
+      );
+      return (rowCount ?? 0) > 0;
+    },
+    async deleteForUser(userId) {
+      await pool.query('DELETE FROM mfa_recovery_codes WHERE user_id = $1', [userId]);
+    },
+    async countRemaining(userId) {
+      const { rows } = await pool.query(
+        'SELECT COUNT(*)::int AS n FROM mfa_recovery_codes WHERE user_id = $1 AND consumed_at IS NULL',
+        [userId],
+      );
+      return rows[0].n as number;
+    },
+  };
+
   return {
     users,
     refreshTokens,
@@ -381,6 +432,7 @@ export function createPostgresStorage(databaseUrl: string): Storage {
     roles,
     audit,
     loginAttempts,
+    recoveryCodes,
     async close() {
       await pool.end();
     },

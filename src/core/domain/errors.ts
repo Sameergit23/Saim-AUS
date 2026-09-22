@@ -35,4 +35,6 @@ export const Errors = {
       429,
     ),
   csrf: () => new AppError('CSRF_REJECTED', 'Cross-origin request rejected.', 403),
+  invalidMfaCode: () =>
+    new AppError('INVALID_MFA_CODE', 'The verification code is invalid or has expired.', 401),
 } as const;

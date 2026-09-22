@@ -38,6 +38,19 @@ export const ChangePasswordBody = Type.Object(
 );
 export type ChangePasswordBody = Static<typeof ChangePasswordBody>;
 
+// ---- MFA / TOTP ----
+// A TOTP code (6 digits) or a one-time recovery code (allow dashes).
+const MfaCode = Type.String({ minLength: 6, maxLength: 20 });
+
+export const MfaCodeBody = Type.Object({ code: MfaCode }, { additionalProperties: false });
+export type MfaCodeBody = Static<typeof MfaCodeBody>;
+
+export const MfaVerifyBody = Type.Object(
+  { mfaToken: OpaqueToken, code: MfaCode },
+  { additionalProperties: false },
+);
+export type MfaVerifyBody = Static<typeof MfaVerifyBody>;
+
 // ---- Admin / RBAC schemas ----
 const Name = Type.String({ pattern: '^[a-zA-Z0-9_:.-]{2,64}$' });
 const Description = Type.Optional(Type.String({ maxLength: 256 }));

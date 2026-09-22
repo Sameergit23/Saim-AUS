@@ -7,6 +7,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { Config } from '../config/index.js';
 import type { AuthService } from '../core/authn/authService.js';
 import type { RbacService } from '../core/authz/rbacService.js';
+import type { MfaService } from '../core/mfa/mfaService.js';
 import type { TokenService } from '../core/tokens/tokenService.js';
 import { createAuthenticate } from './authGuard.js';
 import { createCsrfGuard } from './csrfGuard.js';
@@ -20,12 +21,13 @@ export interface ServerDeps {
   config: Config;
   auth: AuthService;
   rbac: RbacService;
+  mfa: MfaService;
   tokens: TokenService;
   logger?: boolean;
 }
 
 export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
-  const { config, auth, rbac, tokens } = deps;
+  const { config, auth, rbac, mfa, tokens } = deps;
 
   const app = Fastify({
     logger: deps.logger ?? config.env !== 'test',
@@ -34,6 +36,30 @@ export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
   });
 
   app.setErrorHandler(errorHandler);
+
+  // Accept an empty body on JSON requests (real clients often send
+  // `Content-Type: application/json` even for no-body POSTs like /logout,
+  // /mfa/enroll). An empty body parses to undefined; malformed JSON -> 400.
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (_req, body, done) => {
+      const text = body as string;
+      if (text === undefined || text === null || text.trim() === '') {
+        done(null, undefined);
+        return;
+      }
+      try {
+        done(null, JSON.parse(text));
+      } catch {
+        const err = Object.assign(new Error('Malformed JSON body.'), {
+          statusCode: 400,
+          code: 'FST_ERR_CTP_INVALID_JSON',
+        });
+        done(err as Error, undefined);
+      }
+    },
+  );
 
   // OpenAPI generation from route schemas. Registered before routes so it can
   // collect their schemas. Served as JSON at /api/v1/openapi.json and as an
@@ -72,7 +98,7 @@ export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
 
   const authenticate = createAuthenticate(tokens);
   const csrf = createCsrfGuard(config.allowedOrigins);
-  const routeDeps: RouteDeps = { auth, config, authenticate, csrf };
+  const routeDeps: RouteDeps = { auth, mfa, config, authenticate, csrf };
 
   registerHealthRoutes(app);
   await app.register(

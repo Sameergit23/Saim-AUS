@@ -116,14 +116,16 @@ Phase 8  Maintenance & Iteration
   - [x] Audit logging of security events (SEC-10)
   - [x] Dependency/CVE scanning in **CI** (SEC-11)
   - [x] **Security headers** via `@fastify/helmet` (HSTS, nosniff, frame-options)
-  - [ ] (Optional) MFA/TOTP — deferred
+  - [x] **MFA/TOTP** — delivered as a follow-on feature (see note below)
 - Also delivered: `SECURITY.md` disclosure policy; GitHub Actions CI (typecheck, lint,
   test, `npm audit`); **68 tests passing**; **0 production-dependency vulnerabilities**.
 - Exit criteria: Threat-model mitigations implemented; security checklist passes. ✅ **Met.**
 - Est. effort: **1–2 weeks**
 
-> Deferred: MFA/TOTP (optional, FR-11) and instant permission invalidation via `permVer`
-> (access tokens remain valid ≤ TTL by design). Both are candidates for a later iteration.
+> **MFA/TOTP (FR-11): delivered.** Authenticator-app two-factor with a two-step login
+> challenge, one-time recovery codes, and AES-256-GCM encryption of TOTP secrets at rest.
+> Still deferred: instant permission invalidation via `permVer` (access tokens remain valid
+> ≤ TTL by design).
 
 ---
 

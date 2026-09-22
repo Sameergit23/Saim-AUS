@@ -6,6 +6,7 @@ import type { Mailer } from '../../infra/mailer.js';
 import type { Storage } from '../../storage/interfaces.js';
 import { Errors } from '../domain/errors.js';
 import { toPublicUser, type PublicUser } from '../domain/types.js';
+import type { MfaService } from '../mfa/mfaService.js';
 import type { PasswordService } from '../password/passwordService.js';
 import type { TokenService } from '../tokens/tokenService.js';
 
@@ -17,6 +18,7 @@ export interface AuthServiceDeps {
   tokens: TokenService;
   mailer: Mailer;
   clock: Clock;
+  mfa: Pick<MfaService, 'verifyCode'>;
   accessTokenTtl: string;
   refreshTokenTtlDays: number;
   emailTokenTtlMinutes: number;
@@ -40,10 +42,20 @@ export interface LoginResult extends SessionTokens {
   user: PublicUser;
 }
 
+/** Returned by login when the account has MFA enabled: password step passed,
+ *  the second factor is still required. Complete via `completeMfaLogin`. */
+export interface MfaChallenge {
+  mfaRequired: true;
+  mfaToken: string;
+}
+
+export type LoginOutcome = ({ mfaRequired: false } & LoginResult) | MfaChallenge;
+
 export interface AuthService {
   register(email: string, password: string, ctx: RequestContext): Promise<void>;
   verifyEmail(token: string): Promise<void>;
-  login(email: string, password: string, ctx: RequestContext): Promise<LoginResult>;
+  login(email: string, password: string, ctx: RequestContext): Promise<LoginOutcome>;
+  completeMfaLogin(mfaToken: string, code: string, ctx: RequestContext): Promise<LoginResult>;
   refresh(refreshToken: string, ctx: RequestContext): Promise<SessionTokens>;
   logout(refreshToken: string): Promise<void>;
   changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>;
@@ -161,6 +173,18 @@ export function createAuthService(deps: AuthServiceDeps): AuthService {
 
       // Successful credential check clears the failure counter for this identifier.
       await storage.loginAttempts.clearFailures(email);
+
+      // Second factor: if enabled, do not issue a session yet — return a
+      // short-lived challenge that the client completes via completeMfaLogin.
+      if (user.mfaEnabled) {
+        await storage.audit.record({
+          actorId: user.id,
+          event: 'auth.mfa_challenge',
+          ipHash: hashIp(ctx.ip),
+        });
+        return { mfaRequired: true, mfaToken: await tokens.signMfaToken(user.id) };
+      }
+
       await storage.users.update(user.id, { lastLoginAt: clock.now() });
       const session = await issueSession(user.id, ctx, randomUUID());
       const [roles, perms] = await Promise.all([
@@ -170,6 +194,37 @@ export function createAuthService(deps: AuthServiceDeps): AuthService {
       await storage.audit.record({
         actorId: user.id,
         event: 'auth.login_success',
+        ipHash: hashIp(ctx.ip),
+      });
+      return { mfaRequired: false, ...session, user: toPublicUser(user, roles, perms) };
+    },
+
+    async completeMfaLogin(mfaToken, code, ctx) {
+      const { sub } = await tokens.verifyMfaToken(mfaToken); // throws on invalid/expired
+      const user = await storage.users.findById(sub);
+      if (!user || user.status !== 'active' || !user.mfaEnabled) {
+        throw Errors.invalidToken();
+      }
+
+      const ok = await deps.mfa.verifyCode(user, code);
+      if (!ok) {
+        await storage.audit.record({
+          actorId: user.id,
+          event: 'auth.mfa_failed',
+          ipHash: hashIp(ctx.ip),
+        });
+        throw Errors.invalidMfaCode();
+      }
+
+      await storage.users.update(user.id, { lastLoginAt: clock.now() });
+      const session = await issueSession(user.id, ctx, randomUUID());
+      const [roles, perms] = await Promise.all([
+        storage.roles.getRoleNames(user.id),
+        storage.roles.getPermissionNames(user.id),
+      ]);
+      await storage.audit.record({
+        actorId: user.id,
+        event: 'auth.mfa_success',
         ipHash: hashIp(ctx.ip),
       });
       return { ...session, user: toPublicUser(user, roles, perms) };

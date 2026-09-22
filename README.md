@@ -3,9 +3,10 @@
 A **free, open-source, secure** authentication system with **Role-Based Access Control (RBAC)**
 that any developer can drop into their project.
 
-> Status: **Phases 6–7 — Docs & packaging** ✅ (release-ready)
-> Full auth + RBAC + hardening, coverage-gated tests, **OpenAPI docs + Swagger UI**, a
-> **Dockerfile**, and **release automation**. **120 tests · 0 prod vulnerabilities.**
+> Status: **Release-ready** ✅ — Phases 0–7 complete, plus **MFA/TOTP**.
+> Full auth + RBAC + hardening + two-factor auth, coverage-gated tests, **OpenAPI docs +
+> Swagger UI**, a **Dockerfile**, and **release automation**.
+> **135 tests · ~98% coverage · 0 prod vulnerabilities.**
 > Cutting the v1.0.0 release is a manual step — see [Releasing](#releasing).
 
 ## Vision
@@ -17,7 +18,8 @@ Saim-AUS aims to be a reusable, well-tested, security-first building block that 
 - Secure password storage and reset
 - Session / token management
 - **Role-based authorization** (users → roles → permissions)
-- Account protection (rate limiting, lockout, optional MFA)
+- **Two-factor auth (TOTP)** with recovery codes
+- Account protection (rate limiting, lockout)
 - Audit logging
 
 Free to use under the [MIT License](LICENSE) — use it in any project, including commercial.
@@ -95,6 +97,20 @@ npm run grant-admin -- you@example.com
 
 Role/permission changes take effect on the user's next login or token refresh (within the
 access-token TTL), since permissions are embedded in the short-lived access token.
+
+## Two-factor authentication (TOTP)
+
+Optional per-user MFA using any authenticator app (Google Authenticator, Authy, …).
+
+- **Enroll:** `POST /auth/mfa/enroll` (authenticated) → returns a secret + `otpauth://` URI
+  (render as a QR code). `POST /auth/mfa/confirm` with a code activates it and returns
+  **one-time recovery codes**.
+- **Login becomes two-step for MFA users:** `POST /auth/login` returns
+  `{ mfaRequired: true, mfaToken }` instead of tokens; the client then calls
+  `POST /auth/mfa/verify` with the `mfaToken` and a TOTP (or recovery) code to get a session.
+- **Disable:** `POST /auth/mfa/disable` with a current code.
+
+TOTP secrets are **encrypted at rest** (AES-256-GCM) and recovery codes are stored hashed.
 
 ## Documents
 

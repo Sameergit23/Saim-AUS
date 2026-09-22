@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { AppError } from '../src/core/domain/errors.js';
 import {
   buildTestHarness,
+  loginOk,
   registerAndVerify,
   tokenFromLink,
   type TestHarness,
@@ -60,7 +61,7 @@ describe('authService', () => {
 
     it('logs in a verified user and returns tokens + roles', async () => {
       const { email, password } = await registerAndVerify(h);
-      const result = await h.auth.login(email, password, {});
+      const result = await loginOk(h, email, password);
       expect(result.accessToken).toBeTruthy();
       expect(result.refreshToken).toBeTruthy();
       expect(result.user.roles).toContain('user');
@@ -84,7 +85,7 @@ describe('authService', () => {
   describe('refresh rotation & reuse detection', () => {
     it('rotates the refresh token and issues a new access token', async () => {
       const { email, password } = await registerAndVerify(h);
-      const login = await h.auth.login(email, password, {});
+      const login = await loginOk(h, email, password);
       const rotated = await h.auth.refresh(login.refreshToken, {});
       expect(rotated.refreshToken).not.toBe(login.refreshToken);
       expect(rotated.accessToken).toBeTruthy();
@@ -92,7 +93,7 @@ describe('authService', () => {
 
     it('detects reuse of a consumed refresh token and revokes the family', async () => {
       const { email, password } = await registerAndVerify(h);
-      const login = await h.auth.login(email, password, {});
+      const login = await loginOk(h, email, password);
       const rotated = await h.auth.refresh(login.refreshToken, {});
 
       // Reusing the original (now consumed) token is rejected...
@@ -103,7 +104,7 @@ describe('authService', () => {
 
     it('invalidates the refresh token on logout', async () => {
       const { email, password } = await registerAndVerify(h);
-      const login = await h.auth.login(email, password, {});
+      const login = await loginOk(h, email, password);
       await h.auth.logout(login.refreshToken);
       await expect(h.auth.refresh(login.refreshToken, {})).rejects.toBeInstanceOf(AppError);
     });
@@ -112,7 +113,7 @@ describe('authService', () => {
   describe('password change & reset', () => {
     it('changes password with the correct current password and revokes sessions', async () => {
       const { email, password } = await registerAndVerify(h);
-      const login = await h.auth.login(email, password, {});
+      const login = await loginOk(h, email, password);
       await h.auth.changePassword(login.user.id, password, 'Br@ndNewPass9');
 
       await expect(h.auth.refresh(login.refreshToken, {})).rejects.toBeInstanceOf(AppError);
@@ -121,7 +122,7 @@ describe('authService', () => {
 
     it('rejects a password change with the wrong current password', async () => {
       const { email, password } = await registerAndVerify(h);
-      const login = await h.auth.login(email, password, {});
+      const login = await loginOk(h, email, password);
       await expect(
         h.auth.changePassword(login.user.id, 'WrongCurrent!1', 'Br@ndNewPass9'),
       ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
@@ -129,7 +130,7 @@ describe('authService', () => {
 
     it('resets the password via a reset token and invalidates old sessions', async () => {
       const { email, password } = await registerAndVerify(h);
-      const login = await h.auth.login(email, password, {});
+      const login = await loginOk(h, email, password);
 
       await h.auth.forgotPassword(email, {});
       const resetLink = h.sent.at(-1)!;

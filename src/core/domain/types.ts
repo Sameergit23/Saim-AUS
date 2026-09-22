@@ -8,17 +8,21 @@ export interface User {
   passwordHash: string;
   status: UserStatus;
   emailVerified: boolean;
+  mfaEnabled: boolean;
+  /** Encrypted TOTP secret (ciphertext), or null when MFA is not set up. */
+  mfaSecret: string | null;
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt: Date | null;
 }
 
-/** Public-facing view of a user (never exposes the password hash). */
+/** Public-facing view of a user (never exposes the password hash or MFA secret). */
 export interface PublicUser {
   id: string;
   email: string;
   status: UserStatus;
   emailVerified: boolean;
+  mfaEnabled: boolean;
   roles: string[];
   permissions: string[];
 }
@@ -42,6 +46,7 @@ export interface AdminUserView {
   email: string;
   status: UserStatus;
   emailVerified: boolean;
+  mfaEnabled: boolean;
   roles: string[];
   createdAt: Date;
   lastLoginAt: Date | null;
@@ -87,6 +92,7 @@ export function toPublicUser(user: User, roles: string[], permissions: string[])
     email: user.email,
     status: user.status,
     emailVerified: user.emailVerified,
+    mfaEnabled: user.mfaEnabled,
     roles,
     permissions,
   };

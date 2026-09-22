@@ -8,6 +8,7 @@ async function buildWith(h: TestHarness): Promise<FastifyInstance> {
     config: h.config,
     auth: h.auth,
     rbac: h.rbac,
+    mfa: h.mfa,
     tokens: h.tokens,
     logger: false,
   });

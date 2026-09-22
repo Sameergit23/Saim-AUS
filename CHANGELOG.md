@@ -21,6 +21,14 @@ The pre-1.0 development series. Delivered so far (by SDLC phase):
 - **Testing & QA (Phase 5):** coverage-gated test suite (120 tests, ~98% line coverage).
 - **Docs & packaging (Phases 6–7):** OpenAPI spec + Swagger UI, integration & deployment
   guides, contribution docs, Dockerfile, and release automation.
+- **MFA / TOTP:** authenticator-app two-factor auth with a two-step login challenge,
+  one-time recovery codes, and TOTP secrets encrypted at rest (AES-256-GCM).
+
+### Fixed
+- No-body `POST` requests sent with `Content-Type: application/json` (e.g. logout,
+  MFA enroll) no longer error on an empty body.
+- Fastify client errors (bad content-type, malformed body) now return the correct `4xx`
+  status instead of `500`.
 
 ### Security
 - No production-dependency vulnerabilities (audited in CI).

@@ -51,6 +51,7 @@ export function createRbacService(deps: RbacServiceDeps): RbacService {
       email: user.email,
       status: user.status,
       emailVerified: user.emailVerified,
+      mfaEnabled: user.mfaEnabled,
       roles,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,

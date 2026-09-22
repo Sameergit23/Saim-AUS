@@ -2,9 +2,11 @@ import { buildServer } from './api/server.js';
 import { loadConfig } from './config/index.js';
 import { createAuthService } from './core/authn/authService.js';
 import { createRbacService } from './core/authz/rbacService.js';
+import { createMfaService } from './core/mfa/mfaService.js';
 import { createPasswordService } from './core/password/passwordService.js';
 import { createTokenService } from './core/tokens/tokenService.js';
 import { systemClock } from './infra/clock.js';
+import { createCipher } from './infra/encryption.js';
 import { createConsoleMailer } from './infra/mailer.js';
 import { createStorage } from './storage/index.js';
 
@@ -21,6 +23,8 @@ async function main(): Promise<void> {
     accessTokenTtl: config.accessTokenTtl,
   });
   const mailer = createConsoleMailer((msg) => console.log(msg));
+  const cipher = createCipher(config.mfaSecretKey ?? config.jwtSecret);
+  const mfa = createMfaService({ storage, cipher });
 
   const auth = createAuthService({
     storage,
@@ -28,6 +32,7 @@ async function main(): Promise<void> {
     tokens,
     mailer,
     clock: systemClock,
+    mfa,
     accessTokenTtl: config.accessTokenTtl,
     refreshTokenTtlDays: config.refreshTokenTtlDays,
     emailTokenTtlMinutes: config.emailTokenTtlMinutes,
@@ -38,7 +43,7 @@ async function main(): Promise<void> {
 
   const rbac = createRbacService({ storage, clock: systemClock });
 
-  const app = await buildServer({ config, auth, rbac, tokens });
+  const app = await buildServer({ config, auth, rbac, mfa, tokens });
 
   const shutdown = async (signal: string): Promise<void> => {
     app.log.info(`Received ${signal}, shutting down...`);

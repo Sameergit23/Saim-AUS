@@ -13,6 +13,7 @@ describe('HTTP API', () => {
       config: h.config,
       auth: h.auth,
       rbac: h.rbac,
+      mfa: h.mfa,
       tokens: h.tokens,
       logger: false,
     });
@@ -129,6 +130,26 @@ describe('HTTP API', () => {
       cookies: { refresh_token: cookie.value },
     });
     expect(again.statusCode).toBe(401);
+  });
+
+  it('accepts a no-body POST sent with Content-Type: application/json', async () => {
+    // Real clients often set application/json even with no body (e.g. logout).
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/logout',
+      headers: { 'content-type': 'application/json' },
+    });
+    expect(res.statusCode).toBe(204);
+  });
+
+  it('returns 400 (not 500) for a malformed JSON body', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      headers: { 'content-type': 'application/json' },
+      payload: '{ this is not json ',
+    });
+    expect(res.statusCode).toBe(400);
   });
 
   it('rejects an invalid email-verification token with 401', async () => {

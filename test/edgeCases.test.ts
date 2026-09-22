@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fixedClock } from '../src/infra/clock.js';
-import { buildTestHarness, tokenFromLink, type TestHarness } from './helpers.js';
+import { buildTestHarness, loginOk, tokenFromLink, type TestHarness } from './helpers.js';
 
 const MINUTE = 60_000;
 const DAY = 86_400_000;
@@ -42,7 +42,7 @@ describe('time-based expiry (deterministic via fixed clock)', () => {
   it('rejects a refresh token after it expires', async () => {
     await h.auth.register('rt@example.com', 'Str0ng!Passphrase', {});
     await h.auth.verifyEmail(tokenFromLink(h.sent.at(-1)!.link));
-    const login = await h.auth.login('rt@example.com', 'Str0ng!Passphrase', {});
+    const login = await loginOk(h, 'rt@example.com', 'Str0ng!Passphrase');
     clock.advance(31 * DAY); // refresh TTL is 30 days
     await expect(h.auth.refresh(login.refreshToken, {})).rejects.toMatchObject({
       code: 'INVALID_TOKEN',

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { buildTestHarness, registerAndVerify, type TestHarness } from './helpers.js';
+import { buildTestHarness, loginOk, registerAndVerify, type TestHarness } from './helpers.js';
 
 const ACTOR = 'admin-actor-id';
 
@@ -116,7 +116,7 @@ describe('rbacService', () => {
     it('disables a user and revokes their sessions', async () => {
       const email = 'victim@example.com';
       await registerAndVerify(h, email, 'Victim!Passphrase9');
-      const login = await h.auth.login(email, 'Victim!Passphrase9', {});
+      const login = await loginOk(h, email, 'Victim!Passphrase9');
       const userId = login.user.id;
 
       await h.rbac.setUserEnabled(userId, false, ACTOR);

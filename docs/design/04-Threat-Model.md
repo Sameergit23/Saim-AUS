@@ -112,7 +112,8 @@ flowchart LR
 - **Host security is the deployer's responsibility** — a compromised host or leaked signing
   key breaks all guarantees; document key management (SEC-8).
 - **Email channel trust** — reset/verification security assumes the email account isn't
-  compromised; MFA (FR-11) reduces reliance on email.
+  compromised. **MFA/TOTP is now implemented** (authenticator second factor + recovery
+  codes), reducing reliance on the email channel for account security.
 - **Deployment misconfiguration** — insecure defaults by integrators are a top risk; ship
   secure defaults and a hardening guide (Phase 6).
 

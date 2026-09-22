@@ -13,6 +13,7 @@ import type {
   NewEmailToken,
   NewRefreshToken,
   NewUser,
+  RecoveryCodeRepo,
   RefreshTokenRepo,
   RoleRepo,
   Storage,
@@ -79,6 +80,8 @@ export function createMemoryStorage(): Storage {
         passwordHash: input.passwordHash,
         status: input.status,
         emailVerified: input.emailVerified,
+        mfaEnabled: false,
+        mfaSecret: null,
         createdAt: now,
         updatedAt: now,
         lastLoginAt: null,
@@ -317,6 +320,27 @@ export function createMemoryStorage(): Storage {
     },
   };
 
+  const recovery = new Map<string, Set<string>>(); // userId -> Set<codeHash> (unconsumed)
+  const recoveryCodes: RecoveryCodeRepo = {
+    async replaceForUser(userId, codeHashes) {
+      recovery.set(userId, new Set(codeHashes));
+    },
+    async consume(userId, codeHash) {
+      const set = recovery.get(userId);
+      if (set?.has(codeHash)) {
+        set.delete(codeHash);
+        return true;
+      }
+      return false;
+    },
+    async deleteForUser(userId) {
+      recovery.delete(userId);
+    },
+    async countRemaining(userId) {
+      return recovery.get(userId)?.size ?? 0;
+    },
+  };
+
   return {
     users,
     refreshTokens: refreshTokenRepo,
@@ -324,6 +348,7 @@ export function createMemoryStorage(): Storage {
     roles,
     audit,
     loginAttempts,
+    recoveryCodes,
     async close() {
       /* nothing to close */
     },

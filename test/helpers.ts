@@ -1,9 +1,11 @@
 import type { Config } from '../src/config/index.js';
-import { createAuthService, type AuthService } from '../src/core/authn/authService.js';
+import { createAuthService, type AuthService, type LoginResult } from '../src/core/authn/authService.js';
 import { createRbacService, type RbacService } from '../src/core/authz/rbacService.js';
+import { createMfaService, type MfaService } from '../src/core/mfa/mfaService.js';
 import { createPasswordService } from '../src/core/password/passwordService.js';
 import { createTokenService, type TokenService } from '../src/core/tokens/tokenService.js';
 import { systemClock, type Clock } from '../src/infra/clock.js';
+import { createCipher } from '../src/infra/encryption.js';
 import type { Mailer } from '../src/infra/mailer.js';
 import { createMemoryStorage } from '../src/storage/memory/memoryStorage.js';
 import type { Storage } from '../src/storage/interfaces.js';
@@ -21,6 +23,7 @@ export interface TestHarness {
   tokens: TokenService;
   auth: AuthService;
   rbac: RbacService;
+  mfa: MfaService;
   sent: SentEmail[];
   config: Config;
   clock: Clock;
@@ -46,12 +49,15 @@ export function buildTestHarness(opts: { clock?: Clock } = {}): TestHarness {
     },
   };
 
+  const mfa = createMfaService({ storage, cipher: createCipher(TEST_SECRET) });
+
   const auth = createAuthService({
     storage,
     password,
     tokens,
     mailer,
     clock,
+    mfa,
     accessTokenTtl: '15m',
     refreshTokenTtlDays: 30,
     emailTokenTtlMinutes: 60,
@@ -81,9 +87,22 @@ export function buildTestHarness(opts: { clock?: Clock } = {}): TestHarness {
     loginWindowMinutes: 15,
     allowedOrigins: [],
     docsUi: true,
+    mfaSecretKey: null,
   };
 
-  return { storage, tokens, auth, rbac, sent, config, clock };
+  return { storage, tokens, auth, rbac, mfa, sent, config, clock };
+}
+
+/** Log in and assert no MFA challenge was returned (returns the token result). */
+export async function loginOk(
+  harness: TestHarness,
+  email: string,
+  password: string,
+  ctx = {},
+): Promise<LoginResult> {
+  const result = await harness.auth.login(email, password, ctx);
+  if (result.mfaRequired) throw new Error('unexpected MFA challenge');
+  return result;
 }
 
 /** Register + verify a user, then grant them the built-in `admin` role. */

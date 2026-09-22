@@ -17,7 +17,7 @@ export interface NewUser {
 }
 
 export type UserPatch = Partial<
-  Pick<User, 'passwordHash' | 'status' | 'emailVerified' | 'lastLoginAt'>
+  Pick<User, 'passwordHash' | 'status' | 'emailVerified' | 'lastLoginAt' | 'mfaEnabled' | 'mfaSecret'>
 >;
 
 export interface UserRepo {
@@ -100,6 +100,14 @@ export interface LoginAttemptRepo {
   clearFailures(identifier: string): Promise<void>;
 }
 
+/** One-time MFA recovery (backup) codes, stored as hashes. */
+export interface RecoveryCodeRepo {
+  replaceForUser(userId: string, codeHashes: string[]): Promise<void>;
+  consume(userId: string, codeHash: string): Promise<boolean>;
+  deleteForUser(userId: string): Promise<void>;
+  countRemaining(userId: string): Promise<number>;
+}
+
 export interface Storage {
   users: UserRepo;
   refreshTokens: RefreshTokenRepo;
@@ -107,5 +115,6 @@ export interface Storage {
   roles: RoleRepo;
   audit: AuditRepo;
   loginAttempts: LoginAttemptRepo;
+  recoveryCodes: RecoveryCodeRepo;
   close(): Promise<void>;
 }

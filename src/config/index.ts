@@ -25,6 +25,9 @@ export interface Config {
   allowedOrigins: string[];
   // Docs (Phase 6): interactive Swagger UI at /docs — off by default in production.
   docsUi: boolean;
+  // MFA (feature): key material for encrypting TOTP secrets at rest. Falls back to
+  // JWT_SECRET when unset; set a dedicated value in production.
+  mfaSecretKey: string | null;
 }
 
 function required(name: string): string {
@@ -91,5 +94,6 @@ export function loadConfig(): Config {
     loginWindowMinutes: toInt(optional('LOGIN_LOCKOUT_MINUTES', '15'), 'LOGIN_LOCKOUT_MINUTES'),
     allowedOrigins,
     docsUi: optional('ENABLE_DOCS_UI', env === 'production' ? 'false' : 'true') === 'true',
+    mfaSecretKey: process.env.MFA_SECRET_KEY?.trim() || null,
   };
 }
