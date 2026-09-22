@@ -9,6 +9,12 @@ declare module 'fastify' {
 }
 
 /**
+ * OpenAPI security requirement marking an endpoint as needing a Bearer token.
+ * Attaching this to a route's schema makes Swagger UI send the "Authorize" token.
+ */
+export const bearerSecurity = [{ bearerAuth: [] as string[] }];
+
+/**
  * Builds a preHandler that authenticates a request via the Bearer access token
  * and attaches the verified claims to `request.user`. Stateless — no DB call.
  */

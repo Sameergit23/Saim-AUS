@@ -1,6 +1,6 @@
 import type { FastifyInstance, preHandlerHookHandler } from 'fastify';
 import type { RbacService } from '../../core/authz/rbacService.js';
-import { createRequirePermission } from '../authGuard.js';
+import { bearerSecurity, createRequirePermission } from '../authGuard.js';
 import {
   AssignRolesBody,
   AttachPermissionsBody,
@@ -29,6 +29,12 @@ export function registerAdminRoutes(app: FastifyInstance, deps: AdminRouteDeps):
   const { rbac, authenticate } = deps;
   // Every admin route: authenticate first, then check the required permission.
   const guard = (perm: string): preHandlerHookHandler[] => [authenticate, createRequirePermission(perm)];
+
+  // All admin routes require a Bearer token — mark them so in the OpenAPI spec
+  // (Swagger's Authorize then sends the token) and group them under the Admin tag.
+  app.addHook('onRoute', (routeOptions) => {
+    routeOptions.schema = { ...(routeOptions.schema ?? {}), tags: ['Admin'], security: bearerSecurity };
+  });
 
   // ---- Users ----
   app.get('/users', { preHandler: guard(PERM_USER_READ) }, async (request) => {

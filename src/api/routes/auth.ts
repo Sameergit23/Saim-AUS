@@ -3,6 +3,7 @@ import type { Config } from '../../config/index.js';
 import { Errors } from '../../core/domain/errors.js';
 import type { AuthService, LoginResult, RequestContext } from '../../core/authn/authService.js';
 import type { MfaService } from '../../core/mfa/mfaService.js';
+import { bearerSecurity } from '../authGuard.js';
 import { clearRefreshCookie, readRefreshToken, setRefreshCookie } from '../cookies.js';
 import {
   ChangePasswordBody,
@@ -107,7 +108,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: RouteDeps): void 
 
   app.post(
     '/password/change',
-    { schema: { body: ChangePasswordBody }, preHandler: deps.authenticate },
+    { schema: { body: ChangePasswordBody, security: bearerSecurity }, preHandler: deps.authenticate },
     async (request, reply) => {
       const body = request.body as ChangePasswordBody;
       await auth.changePassword(request.user!.sub, body.currentPassword, body.newPassword);
@@ -125,14 +126,18 @@ export function registerAuthRoutes(app: FastifyInstance, deps: RouteDeps): void 
   });
 
   // Begin enrollment: returns a TOTP secret + otpauth URI (render as a QR code).
-  app.post('/mfa/enroll', { preHandler: deps.authenticate }, async (request) => {
-    return mfa.beginEnrollment(request.user!.sub);
-  });
+  app.post(
+    '/mfa/enroll',
+    { schema: { security: bearerSecurity }, preHandler: deps.authenticate },
+    async (request) => {
+      return mfa.beginEnrollment(request.user!.sub);
+    },
+  );
 
   // Confirm enrollment with a code from the authenticator app; returns recovery codes.
   app.post(
     '/mfa/confirm',
-    { schema: { body: MfaCodeBody }, preHandler: deps.authenticate },
+    { schema: { body: MfaCodeBody, security: bearerSecurity }, preHandler: deps.authenticate },
     async (request) => {
       const body = request.body as MfaCodeBody;
       return mfa.confirmEnrollment(request.user!.sub, body.code);
@@ -142,7 +147,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: RouteDeps): void 
   // Disable MFA (requires a current TOTP or recovery code).
   app.post(
     '/mfa/disable',
-    { schema: { body: MfaCodeBody }, preHandler: deps.authenticate },
+    { schema: { body: MfaCodeBody, security: bearerSecurity }, preHandler: deps.authenticate },
     async (request, reply) => {
       const body = request.body as MfaCodeBody;
       await mfa.disable(request.user!.sub, body.code);
